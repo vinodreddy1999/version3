@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.api.routes.admin import router as admin_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.inventory import router as inventory_router
 from app.api.routes.maintenance import router as maintenance_router
@@ -15,13 +16,19 @@ from app.api.routes.reports import router as reports_router
 from app.api.routes.sales import router as sales_router
 from app.api.routes.warehouse import router as warehouse_router
 from app.core.config import settings
-from app.core.db import Base, engine
+from app.core.db import Base, SessionLocal, engine
+from app.core.seed import seed_permissions
 from app.models import *  # noqa: F401,F403  (register all models on Base.metadata)
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        seed_permissions(db)
+    finally:
+        db.close()
     yield
 
 
@@ -36,6 +43,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(admin_router)
 app.include_router(org_router)
 app.include_router(inventory_router)
 app.include_router(warehouse_router)

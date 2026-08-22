@@ -3,8 +3,9 @@ from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
+from app.core.seed import seed_permissions
 from app.models.tenant import Tenant
-from app.models.user import Role, User
+from app.models.user import Permission, Role, User
 from app.schemas.auth import LoginRequest, RefreshRequest, RegisterTenantRequest, TokenResponse, UserOut
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -23,11 +24,14 @@ def register_tenant(payload: RegisterTenantRequest, db: Session = Depends(get_db
     if db.query(Tenant).filter(Tenant.slug == payload.tenant_slug).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant slug already in use")
 
+    seed_permissions(db)
+
     tenant = Tenant(name=payload.tenant_name, slug=payload.tenant_slug)
     db.add(tenant)
     db.flush()
 
     admin_role = Role(tenant_id=tenant.id, name="Admin", is_system=True)
+    admin_role.permissions = db.query(Permission).all()
     db.add(admin_role)
     db.flush()
 
