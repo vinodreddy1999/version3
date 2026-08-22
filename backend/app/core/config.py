@@ -32,6 +32,12 @@ class Settings(BaseSettings):
     smtp_from_email: str = "no-reply@metam.local"
     smtp_use_tls: bool = True
 
+    # Local disk directory attachment uploads are written to. Relative to the
+    # process's working directory (== /app in the Docker image), so mount a
+    # volume there in production or uploads won't survive a container restart.
+    attachments_dir: str = "./data/attachments"
+    max_attachment_size_bytes: int = 20 * 1024 * 1024
+
 settings = Settings()
 
 if not settings.jwt_secret:

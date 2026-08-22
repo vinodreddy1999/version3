@@ -4,6 +4,7 @@ import { inventoryApi, qualityApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
 import { ClipboardCheck } from 'lucide-react'
+import { AttachmentsPanel } from '../components/AttachmentsPanel'
 import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const INSPECTIONS_PAGE_SIZE = 20
@@ -132,6 +133,7 @@ export function QualityPage() {
                       ))}
                     </Table>
                   )}
+                  <AttachmentsPanel entityType="inspection" entityId={insp.id} />
                 </div>
               ))}
             </div>

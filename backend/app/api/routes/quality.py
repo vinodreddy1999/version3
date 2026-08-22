@@ -10,6 +10,13 @@ from app.schemas.quality import InspectionCreate, InspectionOut
 router = APIRouter(prefix="/api/quality", tags=["quality"])
 
 
+def _get_owned_inspection(db: Session, user: User, inspection_id: str) -> Inspection:
+    inspection = db.get(Inspection, inspection_id)
+    if inspection is None or inspection.tenant_id != user.tenant_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inspection not found")
+    return inspection
+
+
 @router.post("/inspections", response_model=InspectionOut, status_code=status.HTTP_201_CREATED)
 def create_inspection(
     payload: InspectionCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)

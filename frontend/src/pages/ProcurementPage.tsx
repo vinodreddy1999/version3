@@ -4,6 +4,7 @@ import { inventoryApi, procurementApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
 import { ShoppingCart, Truck } from 'lucide-react'
+import { AttachmentsPanel } from '../components/AttachmentsPanel'
 import { Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const ORDERS_PAGE_SIZE = 20
@@ -202,6 +203,7 @@ export function ProcurementPage() {
                         </tr>
                       ))}
                     </Table>
+                    <AttachmentsPanel entityType="purchase_order" entityId={o.id} />
                   </div>
                 ))}
               </div>

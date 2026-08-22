@@ -1,3 +1,4 @@
+from app.models.attachment import Attachment  # noqa: F401
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.inventory import Item, StockBalance, StockMovement  # noqa: F401
 from app.models.maintenance import Asset, MaintenanceWorkOrder  # noqa: F401

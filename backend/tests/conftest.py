@@ -1,7 +1,9 @@
 import os
+import tempfile
 
 os.environ.setdefault("DATABASE_URL", "sqlite:///./test.db")
 os.environ.setdefault("RATE_LIMIT_ENABLED", "false")
+os.environ.setdefault("ATTACHMENTS_DIR", tempfile.mkdtemp(prefix="metam_test_attachments_"))
 
 import pytest
 from fastapi.testclient import TestClient

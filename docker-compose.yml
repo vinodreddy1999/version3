@@ -26,6 +26,9 @@ services:
       SMTP_PASSWORD: ${SMTP_PASSWORD:-}
       SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-no-reply@metam.local}
       SMTP_USE_TLS: ${SMTP_USE_TLS:-true}
+      ATTACHMENTS_DIR: /app/data/attachments
+    volumes:
+      - attachments-data:/app/data
     depends_on:
       db:
         condition: service_healthy
@@ -44,3 +47,4 @@ services:
 
 volumes:
   db-data:
+  attachments-data:

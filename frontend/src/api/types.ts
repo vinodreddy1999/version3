@@ -301,6 +301,18 @@ export interface Inspection {
   defects: Defect[]
 }
 
+export type AttachmentEntityType = 'inspection' | 'purchase_order'
+
+export interface Attachment {
+  id: string
+  entity_type: AttachmentEntityType
+  entity_id: string
+  filename: string
+  content_type: string
+  size_bytes: number
+  created_at: string
+}
+
 export interface Dashboard {
   inventory: { active_item_count: number; total_quantity_on_hand: string; low_stock_item_count: number }
   warehouse: { pending_putaway_tasks: number; pending_pick_tasks: number }

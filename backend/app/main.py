@@ -8,6 +8,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.routes.admin import router as admin_router
+from app.api.routes.attachments import router as attachments_router
 from app.api.routes.auth import router as auth_router
 from app.api.routes.inventory import router as inventory_router
 from app.api.routes.maintenance import router as maintenance_router
@@ -62,6 +63,7 @@ app.include_router(sales_router)
 app.include_router(maintenance_router)
 app.include_router(quality_router)
 app.include_router(reports_router)
+app.include_router(attachments_router)
 
 
 @app.get("/health")

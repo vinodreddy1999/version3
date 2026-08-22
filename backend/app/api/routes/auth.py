@@ -45,7 +45,7 @@ def _issue_tokens(user: User) -> TokenResponse:
 
 
 @router.post("/register-tenant", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-@limiter.limit("5/hour")
+@limiter.limit("20/hour")
 def register_tenant(
     request: Request, payload: RegisterTenantRequest, db: Session = Depends(get_db_session)
 ) -> TokenResponse:

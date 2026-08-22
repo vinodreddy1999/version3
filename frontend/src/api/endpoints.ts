@@ -1,7 +1,9 @@
-import { apiClient, downloadCsv, toPaginated } from '../lib/apiClient'
+import { apiClient, downloadFile, toPaginated } from '../lib/apiClient'
 import type {
   AdminUser,
   Asset,
+  Attachment,
+  AttachmentEntityType,
   AuditLogEntry,
   BillOfMaterial,
   Bin,
@@ -79,17 +81,17 @@ export const inventoryApi = {
     description?: string
   }) => apiClient.post<Item>('/api/inventory/items', payload).then((r) => r.data),
 
-  exportItems: () => downloadCsv('/api/inventory/items/export'),
+  exportItems: () => downloadFile('/api/inventory/items/export'),
 
   listBalances: (plantId?: string) =>
     apiClient.get<StockBalance[]>('/api/inventory/balances', { params: { plant_id: plantId } }).then((r) => r.data),
-  exportBalances: (plantId?: string) => downloadCsv('/api/inventory/balances/export', { plant_id: plantId }),
+  exportBalances: (plantId?: string) => downloadFile('/api/inventory/balances/export', { plant_id: plantId }),
 
   listMovements: (plantId?: string, page?: PageParams): Promise<Paginated<StockMovement>> =>
     apiClient
       .get<StockMovement[]>('/api/inventory/movements', { params: { plant_id: plantId, ...page } })
       .then(toPaginated),
-  exportMovements: (plantId?: string) => downloadCsv('/api/inventory/movements/export', { plant_id: plantId }),
+  exportMovements: (plantId?: string) => downloadFile('/api/inventory/movements/export', { plant_id: plantId }),
   createMovement: (payload: {
     plant_id: string
     item_id: string
@@ -153,7 +155,7 @@ export const productionApi = {
     apiClient
       .get<ProductionOrder[]>('/api/production/orders', { params: { plant_id: plantId, ...page } })
       .then(toPaginated),
-  exportOrders: (plantId?: string) => downloadCsv('/api/production/orders/export', { plant_id: plantId }),
+  exportOrders: (plantId?: string) => downloadFile('/api/production/orders/export', { plant_id: plantId }),
   createOrder: (payload: { plant_id: string; bom_id: string; quantity_planned: string; reference?: string }) =>
     apiClient.post<ProductionOrder>('/api/production/orders', payload).then((r) => r.data),
   completeOrder: (id: string, quantity: string) =>
@@ -169,7 +171,7 @@ export const procurementApi = {
     apiClient
       .get<PurchaseOrder[]>('/api/procurement/orders', { params: { plant_id: plantId, ...page } })
       .then(toPaginated),
-  exportOrders: (plantId?: string) => downloadCsv('/api/procurement/orders/export', { plant_id: plantId }),
+  exportOrders: (plantId?: string) => downloadFile('/api/procurement/orders/export', { plant_id: plantId }),
   createOrder: (payload: {
     plant_id: string
     supplier_id: string
@@ -190,7 +192,7 @@ export const salesApi = {
 
   listOrders: (plantId?: string, page?: PageParams): Promise<Paginated<SalesOrder>> =>
     apiClient.get<SalesOrder[]>('/api/sales/orders', { params: { plant_id: plantId, ...page } }).then(toPaginated),
-  exportOrders: (plantId?: string) => downloadCsv('/api/sales/orders/export', { plant_id: plantId }),
+  exportOrders: (plantId?: string) => downloadFile('/api/sales/orders/export', { plant_id: plantId }),
   createOrder: (payload: {
     plant_id: string
     customer_id: string
@@ -260,6 +262,21 @@ export const adminApi = {
 
   listAuditLog: (page?: PageParams): Promise<Paginated<AuditLogEntry>> =>
     apiClient.get<AuditLogEntry[]>('/api/admin/audit-log', { params: page }).then(toPaginated),
+}
+
+export const attachmentsApi = {
+  list: (entityType: AttachmentEntityType, entityId: string) =>
+    apiClient
+      .get<Attachment[]>('/api/attachments', { params: { entity_type: entityType, entity_id: entityId } })
+      .then((r) => r.data),
+  upload: (entityType: AttachmentEntityType, entityId: string, file: File) => {
+    const form = new FormData()
+    form.append('entity_type', entityType)
+    form.append('entity_id', entityId)
+    form.append('file', file)
+    return apiClient.post<Attachment>('/api/attachments', form).then((r) => r.data)
+  },
+  download: (attachment: Attachment) => downloadFile(`/api/attachments/${attachment.id}/download`),
 }
 
 export const reportsApi = {

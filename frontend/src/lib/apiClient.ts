@@ -31,13 +31,14 @@ export function toPaginated<T>(response: AxiosResponse<T[]>): Paginated<T> {
   }
 }
 
-// Downloads a CSV export endpoint and saves it as a file, reusing the same
+// Downloads a file from any endpoint that sets Content-Disposition (CSV
+// exports, attachment downloads, ...) and saves it, reusing the same
 // authenticated apiClient instance (and its token-refresh interceptor) rather
 // than a bare fetch/anchor-href request.
-export async function downloadCsv(url: string, params?: Record<string, string | undefined>): Promise<void> {
+export async function downloadFile(url: string, params?: Record<string, string | undefined>): Promise<void> {
   const response = await apiClient.get<Blob>(url, { params, responseType: 'blob' })
   const disposition = response.headers['content-disposition'] as string | undefined
-  const filename = disposition?.match(/filename="?([^"]+)"?/)?.[1] ?? 'export.csv'
+  const filename = disposition?.match(/filename="?([^"]+)"?/)?.[1] ?? 'download'
 
   const blobUrl = URL.createObjectURL(response.data)
   const link = document.createElement('a')

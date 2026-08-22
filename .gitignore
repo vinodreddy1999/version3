@@ -11,6 +11,9 @@ htmlcov/
 *.db
 *.sqlite3
 
+# Local attachment uploads
+backend/data/
+
 # Env
 .env
 
