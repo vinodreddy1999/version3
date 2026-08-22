@@ -66,6 +66,8 @@ def test_me_returns_current_user_with_valid_token(client):
     assert body["email"] == "admin@acme.example.com"
     assert body["is_superuser"] is True
     assert "Admin" in body["roles"]
+    assert "admin:manage_users" in body["permissions"]
+    assert "inventory:write" in body["permissions"]
 
 
 def test_refresh_issues_new_access_token(client):

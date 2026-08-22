@@ -24,6 +24,7 @@ class UserOut(BaseModel):
     tenant_id: str
     is_superuser: bool
     roles: list[str]
+    permissions: list[str]
 
     model_config = {"from_attributes": True}
 

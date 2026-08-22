@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session
+from app.core.permissions import PERMISSION_CODES
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.core.seed import seed_permissions
 from app.models.tenant import Tenant
@@ -90,6 +91,11 @@ def refresh(payload: RefreshRequest, db: Session = Depends(get_db_session)) -> T
 
 @router.get("/me", response_model=UserOut)
 def me(user: User = Depends(get_current_user)) -> UserOut:
+    permissions = (
+        sorted(PERMISSION_CODES)
+        if user.is_superuser
+        else sorted({perm.code for role in user.roles for perm in role.permissions})
+    )
     return UserOut(
         id=user.id,
         email=user.email,
@@ -97,4 +103,5 @@ def me(user: User = Depends(get_current_user)) -> UserOut:
         tenant_id=user.tenant_id,
         is_superuser=user.is_superuser,
         roles=[role.name for role in user.roles],
+        permissions=permissions,
     )
