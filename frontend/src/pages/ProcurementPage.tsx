@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, procurementApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { ShoppingCart, Truck } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function ProcurementPage() {
   const queryClient = useQueryClient()
@@ -62,10 +63,11 @@ export function ProcurementPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Procurement</h1>
+      <PageHeader title="Procurement" description="Suppliers and purchase orders." />
 
       <Card
         title="Suppliers"
+        icon={<Truck className="h-4 w-4" />}
         actions={
           <form
             className="flex items-end gap-2"
@@ -96,7 +98,7 @@ export function ProcurementPage() {
         )}
       </Card>
 
-      <Card title="Purchase orders">
+      <Card title="Purchase orders" icon={<ShoppingCart className="h-4 w-4" />}>
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage purchase orders." />
         ) : (

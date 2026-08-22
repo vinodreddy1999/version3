@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Building2, Factory } from 'lucide-react'
 import { orgApi } from '../api/endpoints'
-import { Badge, Button, Card, Input, Select, Table, EmptyState } from '../components/ui'
+import { Badge, Button, Card, Input, PageHeader, Select, Table, EmptyState } from '../components/ui'
 
 export function OrgPage() {
   const queryClient = useQueryClient()
@@ -29,10 +30,11 @@ export function OrgPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Organization</h1>
+      <PageHeader title="Organization" description="Companies and plants under your tenant." />
 
       <Card
         title="Companies"
+        icon={<Building2 className="h-4 w-4" />}
         actions={
           <form
             className="flex items-end gap-2"
@@ -80,6 +82,7 @@ export function OrgPage() {
 
       <Card
         title="Plants"
+        icon={<Factory className="h-4 w-4" />}
         actions={
           <form
             className="flex items-end gap-2"

@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, qualityApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { ClipboardCheck } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function QualityPage() {
   const queryClient = useQueryClient()
@@ -45,12 +46,12 @@ export function QualityPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Quality</h1>
+      <PageHeader title="Quality" description="Inspections and defect tracking." />
 
       {!selectedPlantId ? (
         <EmptyState message="Select a plant to log inspections." />
       ) : (
-        <Card title="Inspections">
+        <Card title="Inspections" icon={<ClipboardCheck className="h-4 w-4" />}>
           <form
             className="mb-4 flex flex-wrap items-end gap-2"
             onSubmit={(e) => {

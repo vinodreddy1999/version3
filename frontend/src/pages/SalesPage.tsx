@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, salesApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { ShoppingCart, Users } from 'lucide-react'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function SalesPage() {
   const queryClient = useQueryClient()
@@ -70,10 +71,11 @@ export function SalesPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Sales</h1>
+      <PageHeader title="Sales" description="Customers and sales orders." />
 
       <Card
         title="Customers"
+        icon={<Users className="h-4 w-4" />}
         actions={
           <form
             className="flex items-end gap-2"
@@ -104,12 +106,12 @@ export function SalesPage() {
         )}
       </Card>
 
-      <Card title="Sales orders">
+      <Card title="Sales orders" icon={<ShoppingCart className="h-4 w-4" />}>
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage sales orders." />
         ) : (
           <>
-            {shipError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{shipError}</p>}
+            {shipError && <Alert onDismiss={() => setShipError(null)}>{shipError}</Alert>}
             <form
               className="mb-4 flex flex-wrap items-end gap-2"
               onSubmit={(e) => {

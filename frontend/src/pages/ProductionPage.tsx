@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, productionApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { ClipboardList, Factory } from 'lucide-react'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function ProductionPage() {
   const queryClient = useQueryClient()
@@ -62,10 +63,10 @@ export function ProductionPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Production</h1>
+      <PageHeader title="Production" description="Bills of material and production orders." />
 
-      <Card title="Bills of Material">
-        {bomError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{bomError}</p>}
+      <Card title="Bills of Material" icon={<ClipboardList className="h-4 w-4" />}>
+        {bomError && <Alert onDismiss={() => setBomError(null)}>{bomError}</Alert>}
         <form
           className="mb-4 flex flex-col gap-2"
           onSubmit={(e) => {
@@ -160,7 +161,7 @@ export function ProductionPage() {
         )}
       </Card>
 
-      <Card title="Production orders">
+      <Card title="Production orders" icon={<Factory className="h-4 w-4" />}>
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage production orders." />
         ) : (

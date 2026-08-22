@@ -1,5 +1,6 @@
 import { apiClient } from '../lib/apiClient'
 import type {
+  AdminUser,
   Asset,
   BillOfMaterial,
   Bin,
@@ -11,11 +12,13 @@ import type {
   Inspection,
   Item,
   MaintenanceWorkOrder,
+  Permission,
   PickTask,
   Plant,
   ProductionOrder,
   PurchaseOrder,
   PutawayTask,
+  Role,
   SalesOrder,
   StockBalance,
   StockMovement,
@@ -206,6 +209,25 @@ export const qualityApi = {
   }) => apiClient.post<Inspection>('/api/quality/inspections', payload).then((r) => r.data),
   resolveDefect: (defectId: string) =>
     apiClient.post<Inspection>(`/api/quality/defects/${defectId}/resolve`).then((r) => r.data),
+}
+
+export const adminApi = {
+  listPermissions: () => apiClient.get<Permission[]>('/api/admin/permissions').then((r) => r.data),
+
+  listRoles: () => apiClient.get<Role[]>('/api/admin/roles').then((r) => r.data),
+  createRole: (payload: { name: string; permission_codes: string[] }) =>
+    apiClient.post<Role>('/api/admin/roles', payload).then((r) => r.data),
+  updateRole: (id: string, payload: { name?: string; permission_codes?: string[] }) =>
+    apiClient.patch<Role>(`/api/admin/roles/${id}`, payload).then((r) => r.data),
+  deleteRole: (id: string) => apiClient.delete(`/api/admin/roles/${id}`),
+
+  listUsers: () => apiClient.get<AdminUser[]>('/api/admin/users').then((r) => r.data),
+  createUser: (payload: { email: string; full_name: string; password: string; role_ids: string[]; is_superuser?: boolean }) =>
+    apiClient.post<AdminUser>('/api/admin/users', payload).then((r) => r.data),
+  updateUser: (
+    id: string,
+    payload: { full_name?: string; is_active?: boolean; is_superuser?: boolean; role_ids?: string[] },
+  ) => apiClient.patch<AdminUser>(`/api/admin/users/${id}`, payload).then((r) => r.data),
 }
 
 export const reportsApi = {

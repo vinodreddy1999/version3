@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { PackageCheck, PackageMinus, Warehouse as WarehouseIcon } from 'lucide-react'
 import { inventoryApi, warehouseApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function WarehousePage() {
   const queryClient = useQueryClient()
@@ -84,13 +85,14 @@ export function WarehousePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Warehouse</h1>
+      <PageHeader title="Warehouse" description="Warehouses, zones, bins, and putaway/pick tasks." />
 
       {!selectedPlantId ? (
         <EmptyState message="Select a plant to manage warehouses." />
       ) : (
         <>
           <Card
+            icon={<WarehouseIcon className="h-4 w-4" />}
             title="Warehouses"
             actions={
               <form
@@ -226,7 +228,7 @@ export function WarehousePage() {
               </Card>
 
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <Card title="Putaway (receive into bin)">
+                <Card title="Putaway (receive into bin)" icon={<PackageCheck className="h-4 w-4" />}>
                   <form
                     className="flex flex-wrap items-end gap-2"
                     onSubmit={(e) => {
@@ -263,7 +265,7 @@ export function WarehousePage() {
                   </form>
                 </Card>
 
-                <Card title="Pick (ship out of bin)">
+                <Card title="Pick (ship out of bin)" icon={<PackageMinus className="h-4 w-4" />}>
                   <form
                     className="flex flex-wrap items-end gap-2"
                     onSubmit={(e) => {

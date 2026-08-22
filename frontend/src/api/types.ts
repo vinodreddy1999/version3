@@ -11,6 +11,29 @@ export interface CurrentUser {
   tenant_id: string
   is_superuser: boolean
   roles: string[]
+  permissions: string[]
+}
+
+export interface Permission {
+  code: string
+  description: string | null
+}
+
+export interface Role {
+  id: string
+  name: string
+  is_system: boolean
+  permission_codes: string[]
+}
+
+export interface AdminUser {
+  id: string
+  email: string
+  full_name: string
+  is_active: boolean
+  is_superuser: boolean
+  role_ids: string[]
+  role_names: string[]
 }
 
 export interface Company {

@@ -12,6 +12,8 @@ import { ProcurementPage } from './pages/ProcurementPage'
 import { SalesPage } from './pages/SalesPage'
 import { MaintenancePage } from './pages/MaintenancePage'
 import { QualityPage } from './pages/QualityPage'
+import { AdminUsersPage } from './pages/AdminUsersPage'
+import { AdminRolesPage } from './pages/AdminRolesPage'
 
 function ProtectedApp() {
   const { user, isLoading } = useAuth()
@@ -33,6 +35,14 @@ function ProtectedApp() {
   )
 }
 
+function RequirePermission({ code, children }: { code: string; children: React.ReactNode }) {
+  const { hasPermission } = useAuth()
+  if (!hasPermission(code)) {
+    return <Navigate to="/" replace />
+  }
+  return <>{children}</>
+}
+
 export default function App() {
   return (
     <Routes>
@@ -47,6 +57,22 @@ export default function App() {
         <Route path="sales" element={<SalesPage />} />
         <Route path="maintenance" element={<MaintenancePage />} />
         <Route path="quality" element={<QualityPage />} />
+        <Route
+          path="admin/users"
+          element={
+            <RequirePermission code="admin:manage_users">
+              <AdminUsersPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="admin/roles"
+          element={
+            <RequirePermission code="admin:manage_roles">
+              <AdminRolesPage />
+            </RequirePermission>
+          }
+        />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

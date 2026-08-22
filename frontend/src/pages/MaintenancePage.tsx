@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { maintenanceApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { HardHat, Wrench } from 'lucide-react'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function MaintenancePage() {
   const queryClient = useQueryClient()
@@ -50,7 +51,7 @@ export function MaintenancePage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Maintenance</h1>
+      <PageHeader title="Maintenance" description="Assets and the maintenance work order lifecycle." />
 
       {!selectedPlantId ? (
         <EmptyState message="Select a plant to manage assets and work orders." />
@@ -58,6 +59,7 @@ export function MaintenancePage() {
         <>
           <Card
             title="Assets"
+            icon={<HardHat className="h-4 w-4" />}
             actions={
               <form
                 className="flex items-end gap-2"
@@ -91,7 +93,7 @@ export function MaintenancePage() {
             )}
           </Card>
 
-          <Card title="Work orders">
+          <Card title="Work orders" icon={<Wrench className="h-4 w-4" />}>
             <form
               className="mb-4 flex flex-wrap items-end gap-2"
               onSubmit={(e) => {

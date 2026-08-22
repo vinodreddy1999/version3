@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeftRight, Boxes, Package } from 'lucide-react'
 import { inventoryApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Badge, Button, Card, EmptyState, Field, Input, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
 
 export function InventoryPage() {
   const queryClient = useQueryClient()
@@ -46,9 +47,9 @@ export function InventoryPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <h1 className="text-xl font-bold text-slate-800">Inventory</h1>
+      <PageHeader title="Inventory" description="Items, stock balances, and the movement ledger." />
 
-      <Card title="Items">
+      <Card title="Items" icon={<Package className="h-4 w-4" />}>
         <form
           className="mb-4 flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
@@ -95,7 +96,7 @@ export function InventoryPage() {
         )}
       </Card>
 
-      <Card title="Stock balances">
+      <Card title="Stock balances" icon={<Boxes className="h-4 w-4" />}>
         {balances.length === 0 ? (
           <EmptyState message="No stock recorded yet for this plant." />
         ) : (
@@ -113,12 +114,12 @@ export function InventoryPage() {
         )}
       </Card>
 
-      <Card title="Post a stock movement">
+      <Card title="Post a stock movement" icon={<ArrowLeftRight className="h-4 w-4" />}>
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to post movements." />
         ) : (
           <>
-            {formError && <p className="mb-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{formError}</p>}
+            {formError && <Alert onDismiss={() => setFormError(null)}>{formError}</Alert>}
             <form
               className="flex flex-wrap items-end gap-2"
               onSubmit={(e) => {
