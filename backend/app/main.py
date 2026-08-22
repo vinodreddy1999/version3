@@ -1,11 +1,12 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from sqlalchemy import text
 
 from app.api.routes.admin import router as admin_router
 from app.api.routes.attachments import router as attachments_router
@@ -73,4 +74,14 @@ def health() -> dict[str, str]:
 
 @app.get("/ready")
 def ready() -> dict[str, str]:
+    # Unlike /health (process liveness), this checks that the app can
+    # actually serve requests — used by orchestrators to gate traffic
+    # (docker-compose's service_healthy, k8s readiness probes, etc.).
+    db = SessionLocal()
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as exc:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Database unavailable") from exc
+    finally:
+        db.close()
     return {"status": "ready"}

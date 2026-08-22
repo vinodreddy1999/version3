@@ -32,16 +32,21 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
 
   frontend:
     build:
       context: ./frontend
       args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        # Relative path, proxied to the backend by nginx.conf — same-origin,
+        # no CORS needed, and works on any host without rebuilding the image.
+        # Override only for a split-domain setup (frontend and backend on
+        # different hosts/origins).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
       - "8080:8080"
 

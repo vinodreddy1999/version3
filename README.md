@@ -69,7 +69,16 @@ docker compose up --build
 
 This starts Postgres, the backend (migrations run automatically on
 container start — see the caveat in `backend/Dockerfile` for multi-replica
-deployments), and the frontend served by nginx on port 8080.
+deployments), and the frontend served by nginx on port 8080. **Port 8080 is
+the only thing you need to expose publicly** — nginx serves the built
+frontend and reverse-proxies `/api/*` to the backend on the private compose
+network (see `frontend/nginx.conf`), so the app is same-origin (no CORS to
+configure) and works from any host or domain without rebuilding the image.
+The backend container itself is not published to the host.
+
+For a real (non-localhost) deployment, also set `FRONTEND_BASE_URL` in
+`.env` to the actual public URL people will use — it's baked into
+password-reset email links.
 
 ## Security notes
 
@@ -82,10 +91,18 @@ deployments), and the frontend served by nginx on port 8080.
   helpers in each `app/api/routes/*.py` module and the RBAC dependency in
   `app/api/deps.py`.
 - Both application containers run as non-root users with health checks;
-  CI runs CodeQL and Dependabot keeps dependencies current.
+  `/ready` verifies real database connectivity (not just process liveness),
+  so an orchestrator won't route traffic to an instance that can't reach
+  its DB. CI runs CodeQL and Dependabot keeps dependencies current.
+- The backend trusts `X-Forwarded-*` headers from any peer
+  (`--forwarded-allow-ips=*`) so the rate limiter keys on the real client
+  IP instead of nginx's — safe only because the backend container is never
+  published to the host, so nginx is the only thing that can reach it.
+  Don't publish the backend's port without reconsidering this.
 
 ## CI
 
-`.github/workflows/ci.yml` runs the backend test suite, verifies Alembic
-migrations apply cleanly from scratch, and lints + builds the frontend on
-every push and pull request.
+`.github/workflows/ci.yml` runs on every push and pull request: the backend
+test suite, an Alembic migration check (applies cleanly from scratch),
+frontend lint + build, both Docker images building, and the full Playwright
+e2e suite against a real backend + frontend.
