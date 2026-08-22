@@ -4,7 +4,7 @@ import { inventoryApi, procurementApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
 import { ShoppingCart, Truck } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+import { Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const ORDERS_PAGE_SIZE = 20
 
@@ -103,7 +103,11 @@ export function ProcurementPage() {
         )}
       </Card>
 
-      <Card title="Purchase orders" icon={<ShoppingCart className="h-4 w-4" />}>
+      <Card
+        title="Purchase orders"
+        icon={<ShoppingCart className="h-4 w-4" />}
+        actions={<ExportButton onExport={() => procurementApi.exportOrders(selectedPlantId ?? undefined)} />}
+      >
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage purchase orders." />
         ) : (

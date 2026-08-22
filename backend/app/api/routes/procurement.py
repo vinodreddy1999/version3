@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
+from app.core.csv_export import csv_response
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.procurement import PurchaseOrder, PurchaseOrderLine, PurchaseOrderStatus, Supplier
 from app.models.user import User
@@ -107,6 +108,39 @@ def list_purchase_orders(
         .offset(pagination.offset)
         .limit(pagination.limit)
         .all()
+    )
+
+
+@router.get("/orders/export")
+def export_purchase_orders(
+    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+):
+    query = db.query(PurchaseOrder).options(joinedload(PurchaseOrder.lines)).filter(
+        PurchaseOrder.tenant_id == user.tenant_id
+    )
+    if plant_id:
+        query = query.filter(PurchaseOrder.plant_id == plant_id)
+    orders = query.order_by(PurchaseOrder.created_at.desc()).all()
+
+    rows = []
+    for order in orders:
+        supplier = db.get(Supplier, order.supplier_id)
+        for line in order.lines:
+            rows.append(
+                [
+                    order.reference or order.id,
+                    supplier.name if supplier else "",
+                    order.status.value,
+                    line.item.sku,
+                    str(line.quantity_ordered),
+                    str(line.quantity_received),
+                    str(line.unit_price),
+                ]
+            )
+    return csv_response(
+        "purchase_orders.csv",
+        ["Reference", "Supplier", "Status", "SKU", "Ordered", "Received", "Unit Price"],
+        rows,
     )
 
 

@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
-from app.models.inventory import MovementType, StockBalance, StockMovement
+from app.core.csv_export import csv_response
+from app.models.inventory import Item, MovementType, StockBalance, StockMovement
 from app.models.production import (
     BillOfMaterial,
     BOMComponent,
@@ -180,6 +181,37 @@ def list_production_orders(
         .offset(pagination.offset)
         .limit(pagination.limit)
         .all()
+    )
+
+
+@router.get("/orders/export")
+def export_production_orders(
+    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+):
+    query = db.query(ProductionOrder).options(joinedload(ProductionOrder.bom)).filter(
+        ProductionOrder.tenant_id == user.tenant_id
+    )
+    if plant_id:
+        query = query.filter(ProductionOrder.plant_id == plant_id)
+    orders = query.order_by(ProductionOrder.created_at.desc()).all()
+
+    rows = []
+    for order in orders:
+        output_item = db.get(Item, order.bom.output_item_id)
+        rows.append(
+            [
+                order.id,
+                output_item.sku if output_item else "",
+                order.status.value,
+                str(order.quantity_planned),
+                str(order.quantity_completed),
+                order.created_at.isoformat(),
+            ]
+        )
+    return csv_response(
+        "production_orders.csv",
+        ["Order ID", "Output SKU", "Status", "Planned", "Completed", "Created"],
+        rows,
     )
 
 

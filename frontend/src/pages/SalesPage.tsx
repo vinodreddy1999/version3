@@ -4,7 +4,7 @@ import { inventoryApi, salesApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
 import { ShoppingCart, Users } from 'lucide-react'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const ORDERS_PAGE_SIZE = 20
 
@@ -111,7 +111,11 @@ export function SalesPage() {
         )}
       </Card>
 
-      <Card title="Sales orders" icon={<ShoppingCart className="h-4 w-4" />}>
+      <Card
+        title="Sales orders"
+        icon={<ShoppingCart className="h-4 w-4" />}
+        actions={<ExportButton onExport={() => salesApi.exportOrders(selectedPlantId ?? undefined)} />}
+      >
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage sales orders." />
         ) : (

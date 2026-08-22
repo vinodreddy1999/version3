@@ -4,7 +4,7 @@ import { ArrowLeftRight, Boxes, Package } from 'lucide-react'
 import { inventoryApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const MOVEMENTS_PAGE_SIZE = 20
 
@@ -55,7 +55,11 @@ export function InventoryPage() {
     <div className="flex flex-col gap-6">
       <PageHeader title="Inventory" description="Items, stock balances, and the movement ledger." />
 
-      <Card title="Items" icon={<Package className="h-4 w-4" />}>
+      <Card
+        title="Items"
+        icon={<Package className="h-4 w-4" />}
+        actions={<ExportButton onExport={() => inventoryApi.exportItems()} />}
+      >
         <form
           className="mb-4 flex flex-wrap items-end gap-2"
           onSubmit={(e) => {
@@ -102,7 +106,11 @@ export function InventoryPage() {
         )}
       </Card>
 
-      <Card title="Stock balances" icon={<Boxes className="h-4 w-4" />}>
+      <Card
+        title="Stock balances"
+        icon={<Boxes className="h-4 w-4" />}
+        actions={<ExportButton onExport={() => inventoryApi.exportBalances(selectedPlantId ?? undefined)} />}
+      >
         {balances.length === 0 ? (
           <EmptyState message="No stock recorded yet for this plant." />
         ) : (
@@ -177,7 +185,10 @@ export function InventoryPage() {
         )}
       </Card>
 
-      <Card title="Recent movements">
+      <Card
+        title="Recent movements"
+        actions={<ExportButton onExport={() => inventoryApi.exportMovements(selectedPlantId ?? undefined)} />}
+      >
         {movements.length === 0 ? (
           <EmptyState message="No movements recorded yet." />
         ) : (

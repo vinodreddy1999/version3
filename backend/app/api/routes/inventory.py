@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.core.csv_export import csv_response
 from app.models.inventory import Item, MovementType, StockBalance, StockMovement
 from app.models.tenant import Plant
 from app.models.user import User
@@ -64,6 +65,18 @@ def list_items(
     return query.order_by(Item.sku).offset(pagination.offset).limit(pagination.limit).all()
 
 
+@router.get("/items/export")
+def export_items(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
+    items = db.query(Item).filter(Item.tenant_id == user.tenant_id).order_by(Item.sku).all()
+    rows = [
+        [i.sku, i.name, i.item_type.value, i.uom, str(i.reorder_point), "yes" if i.is_active else "no"]
+        for i in items
+    ]
+    return csv_response(
+        "inventory_items.csv", ["SKU", "Name", "Type", "UoM", "Reorder Point", "Active"], rows
+    )
+
+
 @router.get("/items/{item_id}", response_model=ItemOut)
 def get_item(item_id: str, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
     return _get_owned_item(db, user, item_id)
@@ -112,6 +125,28 @@ def list_balances(
             )
         )
     return results
+
+
+@router.get("/balances/export")
+def export_balances(
+    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+):
+    query = db.query(StockBalance).filter(StockBalance.tenant_id == user.tenant_id)
+    if plant_id:
+        query = query.filter(StockBalance.plant_id == plant_id)
+    rows = [
+        [
+            b.item.sku,
+            b.item.name,
+            str(b.quantity_on_hand),
+            str(b.quantity_reserved),
+            str(b.quantity_on_hand - b.quantity_reserved),
+        ]
+        for b in query.all()
+    ]
+    return csv_response(
+        "stock_balances.csv", ["SKU", "Name", "On Hand", "Reserved", "Available"], rows
+    )
 
 
 @router.post("/movements", response_model=StockMovementOut, status_code=status.HTTP_201_CREATED)
@@ -199,4 +234,27 @@ def list_movements(
         .offset(pagination.offset)
         .limit(pagination.limit)
         .all()
+    )
+
+
+@router.get("/movements/export")
+def export_movements(
+    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+):
+    query = db.query(StockMovement).filter(StockMovement.tenant_id == user.tenant_id)
+    if plant_id:
+        query = query.filter(StockMovement.plant_id == plant_id)
+    rows = [
+        [
+            m.created_at.isoformat(),
+            m.item.sku,
+            m.movement_type.value,
+            str(m.quantity),
+            m.reference or "",
+            m.notes or "",
+        ]
+        for m in query.order_by(StockMovement.created_at.desc()).all()
+    ]
+    return csv_response(
+        "stock_movements.csv", ["Date", "SKU", "Type", "Quantity", "Reference", "Notes"], rows
     )

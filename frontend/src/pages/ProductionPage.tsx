@@ -4,7 +4,7 @@ import { inventoryApi, productionApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
 import { ClipboardList, Factory } from 'lucide-react'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const ORDERS_PAGE_SIZE = 20
 
@@ -166,7 +166,11 @@ export function ProductionPage() {
         )}
       </Card>
 
-      <Card title="Production orders" icon={<Factory className="h-4 w-4" />}>
+      <Card
+        title="Production orders"
+        icon={<Factory className="h-4 w-4" />}
+        actions={<ExportButton onExport={() => productionApi.exportOrders(selectedPlantId ?? undefined)} />}
+      >
         {!selectedPlantId ? (
           <EmptyState message="Select a plant to manage production orders." />
         ) : (

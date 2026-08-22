@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
-import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Inbox, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Download, Inbox, X } from 'lucide-react'
 
 export function Card({
   title,
@@ -260,6 +260,14 @@ export function Pager({
         </Button>
       </div>
     </div>
+  )
+}
+
+export function ExportButton({ onExport, label = 'Export CSV' }: { onExport: () => void; label?: string }) {
+  return (
+    <Button variant="secondary" size="sm" onClick={onExport}>
+      <Download className="h-3.5 w-3.5" /> {label}
+    </Button>
   )
 }
 

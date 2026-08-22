@@ -31,6 +31,24 @@ export function toPaginated<T>(response: AxiosResponse<T[]>): Paginated<T> {
   }
 }
 
+// Downloads a CSV export endpoint and saves it as a file, reusing the same
+// authenticated apiClient instance (and its token-refresh interceptor) rather
+// than a bare fetch/anchor-href request.
+export async function downloadCsv(url: string, params?: Record<string, string | undefined>): Promise<void> {
+  const response = await apiClient.get<Blob>(url, { params, responseType: 'blob' })
+  const disposition = response.headers['content-disposition'] as string | undefined
+  const filename = disposition?.match(/filename="?([^"]+)"?/)?.[1] ?? 'export.csv'
+
+  const blobUrl = URL.createObjectURL(response.data)
+  const link = document.createElement('a')
+  link.href = blobUrl
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  URL.revokeObjectURL(blobUrl)
+}
+
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccessToken()
   if (token) {
