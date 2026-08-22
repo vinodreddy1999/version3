@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session
+from app.core.audit import record_audit
 from app.core.permissions import PERMISSION_CODES
 from app.core.rate_limit import limiter
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
@@ -49,6 +50,17 @@ def register_tenant(
     )
     admin_user.roles.append(admin_role)
     db.add(admin_user)
+    db.flush()
+
+    record_audit(
+        db,
+        tenant_id=tenant.id,
+        actor=admin_user,
+        action="tenant.registered",
+        entity_type="tenant",
+        entity_id=tenant.id,
+        summary=f"Organization '{tenant.name}' registered by {admin_user.email}",
+    )
     db.commit()
     db.refresh(admin_user)
 
@@ -72,6 +84,17 @@ def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db_
     )
     if user is None or not verify_password(payload.password, user.hashed_password):
         raise invalid_credentials
+
+    record_audit(
+        db,
+        tenant_id=tenant.id,
+        actor=user,
+        action="user.login",
+        entity_type="user",
+        entity_id=user.id,
+        summary=f"{user.email} logged in",
+    )
+    db.commit()
 
     return _issue_tokens(user)
 

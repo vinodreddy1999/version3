@@ -15,6 +15,7 @@ PERMISSION_CATALOG: list[tuple[str, str]] = [
     ("quality:write", "Log inspections and resolve defects"),
     ("admin:manage_users", "Invite, update, and deactivate users"),
     ("admin:manage_roles", "Create roles and assign permissions"),
+    ("admin:view_audit_log", "View the audit log of account and access changes"),
 ]
 
 PERMISSION_CODES = {code for code, _ in PERMISSION_CATALOG}

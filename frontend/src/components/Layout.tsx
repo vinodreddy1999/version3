@@ -4,6 +4,7 @@ import {
   Building2,
   ClipboardCheck,
   Factory,
+  History,
   LayoutDashboard,
   LogOut,
   ShieldCheck,
@@ -29,6 +30,12 @@ const NAV_ITEMS = [
   { to: '/quality', label: 'Quality', icon: ClipboardCheck },
 ]
 
+const ADMIN_NAV_ITEMS = [
+  { to: '/admin/users', label: 'Users', icon: Users, permission: 'admin:manage_users' },
+  { to: '/admin/roles', label: 'Roles', icon: ShieldCheck, permission: 'admin:manage_roles' },
+  { to: '/admin/audit-log', label: 'Audit log', icon: History, permission: 'admin:view_audit_log' },
+]
+
 function initials(name: string) {
   return name
     .split(' ')
@@ -41,7 +48,7 @@ function initials(name: string) {
 export function Layout() {
   const { user, logout, hasPermission } = useAuth()
   const { plants, selectedPlantId, setSelectedPlantId } = usePlant()
-  const canAdmin = hasPermission('admin:manage_users') || hasPermission('admin:manage_roles')
+  const visibleAdminItems = ADMIN_NAV_ITEMS.filter((item) => hasPermission(item.permission))
 
   return (
     <div className="flex min-h-screen bg-slate-50">
@@ -69,31 +76,23 @@ export function Layout() {
             </NavLink>
           ))}
 
-          {canAdmin && (
+          {visibleAdminItems.length > 0 && (
             <>
               <p className="mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Admin</p>
-              <NavLink
-                to="/admin/users"
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`
-                }
-              >
-                <Users className="h-4 w-4" strokeWidth={2} />
-                Users
-              </NavLink>
-              <NavLink
-                to="/admin/roles"
-                className={({ isActive }) =>
-                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                  }`
-                }
-              >
-                <ShieldCheck className="h-4 w-4" strokeWidth={2} />
-                Roles
-              </NavLink>
+              {visibleAdminItems.map((item) => (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={({ isActive }) =>
+                    `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                    }`
+                  }
+                >
+                  <item.icon className="h-4 w-4" strokeWidth={2} />
+                  {item.label}
+                </NavLink>
+              ))}
             </>
           )}
         </nav>

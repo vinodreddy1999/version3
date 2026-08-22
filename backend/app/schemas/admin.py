@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -50,5 +52,17 @@ class UserAdminOut(BaseModel):
     is_superuser: bool
     role_ids: list[str]
     role_names: list[str]
+
+    model_config = {"from_attributes": True}
+
+
+class AuditLogOut(BaseModel):
+    id: str
+    action: str
+    entity_type: str
+    entity_id: str | None
+    summary: str
+    actor_email: str | None
+    created_at: datetime
 
     model_config = {"from_attributes": True}

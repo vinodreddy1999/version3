@@ -2,6 +2,7 @@ import { apiClient, toPaginated } from '../lib/apiClient'
 import type {
   AdminUser,
   Asset,
+  AuditLogEntry,
   BillOfMaterial,
   Bin,
   BinStock,
@@ -243,6 +244,9 @@ export const adminApi = {
     id: string,
     payload: { full_name?: string; is_active?: boolean; is_superuser?: boolean; role_ids?: string[] },
   ) => apiClient.patch<AdminUser>(`/api/admin/users/${id}`, payload).then((r) => r.data),
+
+  listAuditLog: (page?: PageParams): Promise<Paginated<AuditLogEntry>> =>
+    apiClient.get<AuditLogEntry[]>('/api/admin/audit-log', { params: page }).then(toPaginated),
 }
 
 export const reportsApi = {

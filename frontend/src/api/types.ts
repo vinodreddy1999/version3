@@ -41,6 +41,16 @@ export interface AdminUser {
   role_names: string[]
 }
 
+export interface AuditLogEntry {
+  id: string
+  action: string
+  entity_type: string
+  entity_id: string | null
+  summary: string
+  actor_email: string | null
+  created_at: string
+}
+
 export interface Company {
   id: string
   name: string

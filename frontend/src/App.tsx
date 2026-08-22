@@ -14,6 +14,7 @@ import { MaintenancePage } from './pages/MaintenancePage'
 import { QualityPage } from './pages/QualityPage'
 import { AdminUsersPage } from './pages/AdminUsersPage'
 import { AdminRolesPage } from './pages/AdminRolesPage'
+import { AdminAuditLogPage } from './pages/AdminAuditLogPage'
 
 function ProtectedApp() {
   const { user, isLoading } = useAuth()
@@ -70,6 +71,14 @@ export default function App() {
           element={
             <RequirePermission code="admin:manage_roles">
               <AdminRolesPage />
+            </RequirePermission>
+          }
+        />
+        <Route
+          path="admin/audit-log"
+          element={
+            <RequirePermission code="admin:view_audit_log">
+              <AdminAuditLogPage />
             </RequirePermission>
           }
         />
