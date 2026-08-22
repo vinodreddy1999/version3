@@ -5,6 +5,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes.auth import router as auth_router
+from app.api.routes.inventory import router as inventory_router
+from app.api.routes.org import router as org_router
 from app.core.config import settings
 from app.core.db import Base, engine
 from app.models import *  # noqa: F401,F403  (register all models on Base.metadata)
@@ -27,6 +29,8 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(org_router)
+app.include_router(inventory_router)
 
 
 @app.get("/health")
