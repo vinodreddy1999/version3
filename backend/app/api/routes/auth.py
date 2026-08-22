@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.api.deps import get_current_user, get_db_session
 from app.core.permissions import PERMISSION_CODES
+from app.core.rate_limit import limiter
 from app.core.security import create_access_token, create_refresh_token, decode_token, hash_password, verify_password
 from app.core.seed import seed_permissions
 from app.models.tenant import Tenant
@@ -21,7 +22,10 @@ def _issue_tokens(user: User) -> TokenResponse:
 
 
 @router.post("/register-tenant", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
-def register_tenant(payload: RegisterTenantRequest, db: Session = Depends(get_db_session)) -> TokenResponse:
+@limiter.limit("5/hour")
+def register_tenant(
+    request: Request, payload: RegisterTenantRequest, db: Session = Depends(get_db_session)
+) -> TokenResponse:
     if db.query(Tenant).filter(Tenant.slug == payload.tenant_slug).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Tenant slug already in use")
 
@@ -52,7 +56,8 @@ def register_tenant(payload: RegisterTenantRequest, db: Session = Depends(get_db
 
 
 @router.post("/login", response_model=TokenResponse)
-def login(payload: LoginRequest, db: Session = Depends(get_db_session)) -> TokenResponse:
+@limiter.limit("10/minute")
+def login(request: Request, payload: LoginRequest, db: Session = Depends(get_db_session)) -> TokenResponse:
     tenant = db.query(Tenant).filter(Tenant.slug == payload.tenant_slug, Tenant.is_active.is_(True)).first()
     invalid_credentials = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email, password, or tenant"
@@ -72,7 +77,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db_session)) -> Token
 
 
 @router.post("/refresh", response_model=TokenResponse)
-def refresh(payload: RefreshRequest, db: Session = Depends(get_db_session)) -> TokenResponse:
+@limiter.limit("30/minute")
+def refresh(request: Request, payload: RefreshRequest, db: Session = Depends(get_db_session)) -> TokenResponse:
     invalid_token = HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid refresh token")
     try:
         decoded = decode_token(payload.refresh_token)

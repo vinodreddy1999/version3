@@ -3,6 +3,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.middleware import SlowAPIMiddleware
 
 from app.api.routes.admin import router as admin_router
 from app.api.routes.auth import router as auth_router
@@ -17,6 +20,7 @@ from app.api.routes.sales import router as sales_router
 from app.api.routes.warehouse import router as warehouse_router
 from app.core.config import settings
 from app.core.db import Base, SessionLocal, engine
+from app.core.rate_limit import limiter
 from app.core.seed import seed_permissions
 from app.models import *  # noqa: F401,F403  (register all models on Base.metadata)
 
@@ -33,6 +37,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title=settings.app_name, lifespan=lifespan)
+
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.add_middleware(SlowAPIMiddleware)
 
 app.add_middleware(
     CORSMiddleware,

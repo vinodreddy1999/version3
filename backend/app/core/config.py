@@ -18,6 +18,8 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
 
+    rate_limit_enabled: bool = True
+
 settings = Settings()
 
 if not settings.jwt_secret:
