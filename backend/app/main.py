@@ -11,6 +11,7 @@ from app.api.routes.org import router as org_router
 from app.api.routes.procurement import router as procurement_router
 from app.api.routes.production import router as production_router
 from app.api.routes.quality import router as quality_router
+from app.api.routes.reports import router as reports_router
 from app.api.routes.sales import router as sales_router
 from app.api.routes.warehouse import router as warehouse_router
 from app.core.config import settings
@@ -43,6 +44,7 @@ app.include_router(procurement_router)
 app.include_router(sales_router)
 app.include_router(maintenance_router)
 app.include_router(quality_router)
+app.include_router(reports_router)
 
 
 @app.get("/health")
