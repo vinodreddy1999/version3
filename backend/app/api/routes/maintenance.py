@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_plant
 from app.models.maintenance import Asset, AssetStatus, MaintenanceWorkOrder, WorkOrderStatus
 from app.models.user import User
@@ -26,12 +26,17 @@ def create_asset(payload: AssetCreate, db: Session = Depends(get_db_session), us
 
 @router.get("/assets", response_model=list[AssetOut])
 def list_assets(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(Asset).filter(Asset.tenant_id == user.tenant_id)
     if plant_id:
         query = query.filter(Asset.plant_id == plant_id)
-    return query.order_by(Asset.name).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Asset.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 def _get_owned_asset(db: Session, user: User, asset_id: str) -> Asset:
@@ -64,8 +69,10 @@ def create_work_order(
 
 @router.get("/work-orders", response_model=list[WorkOrderOut])
 def list_work_orders(
+    response: Response,
     plant_id: str | None = None,
     asset_id: str | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
@@ -74,7 +81,13 @@ def list_work_orders(
         query = query.filter(MaintenanceWorkOrder.plant_id == plant_id)
     if asset_id:
         query = query.filter(MaintenanceWorkOrder.asset_id == asset_id)
-    return query.order_by(MaintenanceWorkOrder.created_at.desc()).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return (
+        query.order_by(MaintenanceWorkOrder.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
 
 @router.post("/work-orders/{work_order_id}/start", response_model=WorkOrderOut)

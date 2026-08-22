@@ -2,19 +2,24 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, salesApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
+import { usePagingOffset } from '../lib/usePagingOffset'
 import { ShoppingCart, Users } from 'lucide-react'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const ORDERS_PAGE_SIZE = 20
 
 export function SalesPage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [ordersOffset, setOrdersOffset] = usePagingOffset(selectedPlantId)
 
   const { data: items = [] } = useQuery({ queryKey: ['items'], queryFn: inventoryApi.listItems })
   const { data: customers = [] } = useQuery({ queryKey: ['customers'], queryFn: salesApi.listCustomers })
-  const { data: orders = [] } = useQuery({
-    queryKey: ['sales-orders', selectedPlantId],
-    queryFn: () => salesApi.listOrders(selectedPlantId ?? undefined),
+  const { data: ordersPage } = useQuery({
+    queryKey: ['sales-orders', selectedPlantId, ordersOffset],
+    queryFn: () => salesApi.listOrders(selectedPlantId ?? undefined, { limit: ORDERS_PAGE_SIZE, offset: ordersOffset }),
   })
+  const orders = ordersPage?.items ?? []
 
   const [customerForm, setCustomerForm] = useState({ name: '', code: '' })
   const [orderForm, setOrderForm] = useState({ customer_id: '', item_id: '', quantity_ordered: '', unit_price: '' })
@@ -153,6 +158,7 @@ export function SalesPage() {
             {orders.length === 0 ? (
               <EmptyState message="No sales orders yet." />
             ) : (
+              <>
               <div className="flex flex-col gap-3">
                 {orders.map((o) => (
                   <div key={o.id} className="rounded-md border border-slate-200 p-3">
@@ -204,6 +210,13 @@ export function SalesPage() {
                   </div>
                 ))}
               </div>
+              <Pager
+                offset={ordersOffset}
+                limit={ORDERS_PAGE_SIZE}
+                total={ordersPage?.total ?? 0}
+                onOffsetChange={setOrdersOffset}
+              />
+              </>
             )}
           </>
         )}

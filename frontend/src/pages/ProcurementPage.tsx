@@ -2,19 +2,24 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, procurementApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
+import { usePagingOffset } from '../lib/usePagingOffset'
 import { ShoppingCart, Truck } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const ORDERS_PAGE_SIZE = 20
 
 export function ProcurementPage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [ordersOffset, setOrdersOffset] = usePagingOffset(selectedPlantId)
 
   const { data: items = [] } = useQuery({ queryKey: ['items'], queryFn: inventoryApi.listItems })
   const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: procurementApi.listSuppliers })
-  const { data: orders = [] } = useQuery({
-    queryKey: ['purchase-orders', selectedPlantId],
-    queryFn: () => procurementApi.listOrders(selectedPlantId ?? undefined),
+  const { data: ordersPage } = useQuery({
+    queryKey: ['purchase-orders', selectedPlantId, ordersOffset],
+    queryFn: () => procurementApi.listOrders(selectedPlantId ?? undefined, { limit: ORDERS_PAGE_SIZE, offset: ordersOffset }),
   })
+  const orders = ordersPage?.items ?? []
 
   const [supplierForm, setSupplierForm] = useState({ name: '', code: '' })
   const [orderForm, setOrderForm] = useState({ supplier_id: '', item_id: '', quantity_ordered: '', unit_price: '' })
@@ -144,6 +149,7 @@ export function ProcurementPage() {
             {orders.length === 0 ? (
               <EmptyState message="No purchase orders yet." />
             ) : (
+              <>
               <div className="flex flex-col gap-3">
                 {orders.map((o) => (
                   <div key={o.id} className="rounded-md border border-slate-200 p-3">
@@ -195,6 +201,13 @@ export function ProcurementPage() {
                   </div>
                 ))}
               </div>
+              <Pager
+                offset={ordersOffset}
+                limit={ORDERS_PAGE_SIZE}
+                total={ordersPage?.total ?? 0}
+                onOffsetChange={setOrdersOffset}
+              />
+              </>
             )}
           </>
         )}

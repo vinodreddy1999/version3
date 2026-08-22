@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.sales import Customer, SalesOrder, SalesOrderLine, SalesOrderStatus
@@ -27,8 +27,15 @@ def create_customer(
 
 
 @router.get("/customers", response_model=list[CustomerOut])
-def list_customers(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
-    return db.query(Customer).filter(Customer.tenant_id == user.tenant_id).order_by(Customer.name).all()
+def list_customers(
+    response: Response,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+):
+    query = db.query(Customer).filter(Customer.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Customer.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 def _get_owned_customer(db: Session, user: User, customer_id: str) -> Customer:
@@ -78,12 +85,23 @@ def create_sales_order(
 
 @router.get("/orders", response_model=list[SalesOrderOut])
 def list_sales_orders(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
-    query = db.query(SalesOrder).options(joinedload(SalesOrder.lines)).filter(SalesOrder.tenant_id == user.tenant_id)
+    base_query = db.query(SalesOrder).filter(SalesOrder.tenant_id == user.tenant_id)
     if plant_id:
-        query = query.filter(SalesOrder.plant_id == plant_id)
-    return query.order_by(SalesOrder.created_at.desc()).all()
+        base_query = base_query.filter(SalesOrder.plant_id == plant_id)
+    response.headers["X-Total-Count"] = str(base_query.count())
+    return (
+        base_query.options(joinedload(SalesOrder.lines))
+        .order_by(SalesOrder.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
 
 @router.post("/orders/{order_id}/confirm", response_model=SalesOrderOut)

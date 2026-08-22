@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db_session, require_permissions
+from app.api.deps import PaginationParams, get_current_user, get_db_session, require_permissions
 from app.core.permissions import PERMISSION_CODES
 from app.core.security import hash_password
 from app.models.user import Permission, Role, User
@@ -70,10 +70,14 @@ def list_permissions(
 
 @router.get("/roles", response_model=list[RoleOut])
 def list_roles(
+    response: Response,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(require_permissions("admin:manage_roles")),
 ):
-    roles = db.query(Role).filter(Role.tenant_id == user.tenant_id).order_by(Role.name).all()
+    query = db.query(Role).filter(Role.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(query.count())
+    roles = query.order_by(Role.name).offset(pagination.offset).limit(pagination.limit).all()
     return [_role_to_out(r) for r in roles]
 
 
@@ -134,10 +138,14 @@ def delete_role(
 
 @router.get("/users", response_model=list[UserAdminOut])
 def list_users(
+    response: Response,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(require_permissions("admin:manage_users")),
 ):
-    users = db.query(User).filter(User.tenant_id == user.tenant_id).order_by(User.full_name).all()
+    query = db.query(User).filter(User.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(query.count())
+    users = query.order_by(User.full_name).offset(pagination.offset).limit(pagination.limit).all()
     return [_user_to_out(u) for u in users]
 
 

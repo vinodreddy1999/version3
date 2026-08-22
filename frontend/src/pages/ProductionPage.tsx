@@ -2,19 +2,24 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, productionApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
+import { usePagingOffset } from '../lib/usePagingOffset'
 import { ClipboardList, Factory } from 'lucide-react'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const ORDERS_PAGE_SIZE = 20
 
 export function ProductionPage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [ordersOffset, setOrdersOffset] = usePagingOffset(selectedPlantId)
 
   const { data: items = [] } = useQuery({ queryKey: ['items'], queryFn: inventoryApi.listItems })
   const { data: boms = [] } = useQuery({ queryKey: ['boms'], queryFn: productionApi.listBoms })
-  const { data: orders = [] } = useQuery({
-    queryKey: ['production-orders', selectedPlantId],
-    queryFn: () => productionApi.listOrders(selectedPlantId ?? undefined),
+  const { data: ordersPage } = useQuery({
+    queryKey: ['production-orders', selectedPlantId, ordersOffset],
+    queryFn: () => productionApi.listOrders(selectedPlantId ?? undefined, { limit: ORDERS_PAGE_SIZE, offset: ordersOffset }),
   })
+  const orders = ordersPage?.items ?? []
 
   const [bomForm, setBomForm] = useState({
     output_item_id: '',
@@ -201,41 +206,49 @@ export function ProductionPage() {
             {orders.length === 0 ? (
               <EmptyState message="No production orders yet." />
             ) : (
-              <Table headers={['BOM', 'Planned', 'Completed', 'Status', 'Complete']}>
-                {orders.map((o) => (
-                  <tr key={o.id}>
-                    <td className="px-3 py-2">{boms.find((b) => b.id === o.bom_id)?.name ?? o.bom_id}</td>
-                    <td className="px-3 py-2">{o.quantity_planned}</td>
-                    <td className="px-3 py-2">{o.quantity_completed}</td>
-                    <td className="px-3 py-2">
-                      <Badge tone={statusTone[o.status]}>{o.status.replace('_', ' ')}</Badge>
-                    </td>
-                    <td className="px-3 py-2">
-                      {o.status === 'planned' || o.status === 'in_progress' ? (
-                        <div className="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            step="any"
-                            placeholder="Qty"
-                            value={completeQuantities[o.id] ?? ''}
-                            onChange={(e) => setCompleteQuantities({ ...completeQuantities, [o.id]: e.target.value })}
-                            className="w-20"
-                          />
-                          <Button
-                            variant="secondary"
-                            onClick={() => completeOrder.mutate({ id: o.id, quantity: completeQuantities[o.id] ?? '0' })}
-                            disabled={completeOrder.isPending}
-                          >
-                            Complete
-                          </Button>
-                        </div>
-                      ) : (
-                        '—'
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </Table>
+              <>
+                <Table headers={['BOM', 'Planned', 'Completed', 'Status', 'Complete']}>
+                  {orders.map((o) => (
+                    <tr key={o.id}>
+                      <td className="px-3 py-2">{boms.find((b) => b.id === o.bom_id)?.name ?? o.bom_id}</td>
+                      <td className="px-3 py-2">{o.quantity_planned}</td>
+                      <td className="px-3 py-2">{o.quantity_completed}</td>
+                      <td className="px-3 py-2">
+                        <Badge tone={statusTone[o.status]}>{o.status.replace('_', ' ')}</Badge>
+                      </td>
+                      <td className="px-3 py-2">
+                        {o.status === 'planned' || o.status === 'in_progress' ? (
+                          <div className="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              step="any"
+                              placeholder="Qty"
+                              value={completeQuantities[o.id] ?? ''}
+                              onChange={(e) => setCompleteQuantities({ ...completeQuantities, [o.id]: e.target.value })}
+                              className="w-20"
+                            />
+                            <Button
+                              variant="secondary"
+                              onClick={() => completeOrder.mutate({ id: o.id, quantity: completeQuantities[o.id] ?? '0' })}
+                              disabled={completeOrder.isPending}
+                            >
+                              Complete
+                            </Button>
+                          </div>
+                        ) : (
+                          '—'
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </Table>
+                <Pager
+                  offset={ordersOffset}
+                  limit={ORDERS_PAGE_SIZE}
+                  total={ordersPage?.total ?? 0}
+                  onOffsetChange={setOrdersOffset}
+                />
+              </>
             )}
           </>
         )}

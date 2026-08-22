@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -9,6 +9,17 @@ from app.core.security import decode_token
 from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+
+class PaginationParams:
+    """limit/offset pagination. Default limit is generous enough that
+    reference-data dropdowns (items, suppliers, work centers, ...) still see
+    everything for realistically-sized tenants, while still capping the
+    worst case for lists that can grow without bound (movements, orders)."""
+
+    def __init__(self, limit: int = Query(200, ge=1, le=500), offset: int = Query(0, ge=0)):
+        self.limit = limit
+        self.offset = offset
 
 
 def get_db_session() -> Generator[Session, None, None]:

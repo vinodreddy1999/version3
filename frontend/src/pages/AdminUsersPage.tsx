@@ -4,15 +4,21 @@ import { UserPlus } from 'lucide-react'
 import { adminApi } from '../api/endpoints'
 import { useAuth } from '../contexts/AuthContext'
 import type { AdminUser } from '../api/types'
-import { Alert, Badge, Button, Card, Checkbox, EmptyState, Field, Input, Modal, PageHeader, Table } from '../components/ui'
+import { Alert, Badge, Button, Card, Checkbox, EmptyState, Field, Input, Modal, PageHeader, Pager, Table } from '../components/ui'
 
 const emptyInviteForm = { email: '', full_name: '', password: '', role_ids: [] as string[], is_superuser: false }
+const USERS_PAGE_SIZE = 20
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient()
   const { user: currentUser } = useAuth()
+  const [usersOffset, setUsersOffset] = useState(0)
 
-  const { data: users = [] } = useQuery({ queryKey: ['admin-users'], queryFn: adminApi.listUsers })
+  const { data: usersPage } = useQuery({
+    queryKey: ['admin-users', usersOffset],
+    queryFn: () => adminApi.listUsers({ limit: USERS_PAGE_SIZE, offset: usersOffset }),
+  })
+  const users = usersPage?.items ?? []
   const { data: roles = [] } = useQuery({ queryKey: ['admin-roles'], queryFn: adminApi.listRoles })
 
   const [isInviteOpen, setIsInviteOpen] = useState(false)
@@ -75,6 +81,7 @@ export function AdminUsersPage() {
         {users.length === 0 ? (
           <EmptyState message="No users yet." />
         ) : (
+          <>
           <Table headers={['Name', 'Email', 'Roles', 'Status', '']}>
             {users.map((u) => (
               <tr key={u.id}>
@@ -111,6 +118,8 @@ export function AdminUsersPage() {
               </tr>
             ))}
           </Table>
+          <Pager offset={usersOffset} limit={USERS_PAGE_SIZE} total={usersPage?.total ?? 0} onOffsetChange={setUsersOffset} />
+          </>
         )}
       </Card>
 

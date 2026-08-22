@@ -1,4 +1,4 @@
-import { apiClient } from '../lib/apiClient'
+import { apiClient, toPaginated } from '../lib/apiClient'
 import type {
   AdminUser,
   Asset,
@@ -12,6 +12,7 @@ import type {
   Inspection,
   Item,
   MaintenanceWorkOrder,
+  Paginated,
   Permission,
   PickTask,
   Plant,
@@ -28,6 +29,11 @@ import type {
   WorkCenter,
   Zone,
 } from './types'
+
+export interface PageParams {
+  limit?: number
+  offset?: number
+}
 
 export const authApi = {
   registerTenant: (payload: {
@@ -69,8 +75,10 @@ export const inventoryApi = {
   listBalances: (plantId?: string) =>
     apiClient.get<StockBalance[]>('/api/inventory/balances', { params: { plant_id: plantId } }).then((r) => r.data),
 
-  listMovements: (plantId?: string) =>
-    apiClient.get<StockMovement[]>('/api/inventory/movements', { params: { plant_id: plantId } }).then((r) => r.data),
+  listMovements: (plantId?: string, page?: PageParams): Promise<Paginated<StockMovement>> =>
+    apiClient
+      .get<StockMovement[]>('/api/inventory/movements', { params: { plant_id: plantId, ...page } })
+      .then(toPaginated),
   createMovement: (payload: {
     plant_id: string
     item_id: string
@@ -130,8 +138,10 @@ export const productionApi = {
     components: { component_item_id: string; quantity_per_unit: string }[]
   }) => apiClient.post<BillOfMaterial>('/api/production/boms', payload).then((r) => r.data),
 
-  listOrders: (plantId?: string) =>
-    apiClient.get<ProductionOrder[]>('/api/production/orders', { params: { plant_id: plantId } }).then((r) => r.data),
+  listOrders: (plantId?: string, page?: PageParams): Promise<Paginated<ProductionOrder>> =>
+    apiClient
+      .get<ProductionOrder[]>('/api/production/orders', { params: { plant_id: plantId, ...page } })
+      .then(toPaginated),
   createOrder: (payload: { plant_id: string; bom_id: string; quantity_planned: string; reference?: string }) =>
     apiClient.post<ProductionOrder>('/api/production/orders', payload).then((r) => r.data),
   completeOrder: (id: string, quantity: string) =>
@@ -143,8 +153,10 @@ export const procurementApi = {
   createSupplier: (payload: { name: string; code: string; contact_email?: string; contact_phone?: string }) =>
     apiClient.post<Supplier>('/api/procurement/suppliers', payload).then((r) => r.data),
 
-  listOrders: (plantId?: string) =>
-    apiClient.get<PurchaseOrder[]>('/api/procurement/orders', { params: { plant_id: plantId } }).then((r) => r.data),
+  listOrders: (plantId?: string, page?: PageParams): Promise<Paginated<PurchaseOrder>> =>
+    apiClient
+      .get<PurchaseOrder[]>('/api/procurement/orders', { params: { plant_id: plantId, ...page } })
+      .then(toPaginated),
   createOrder: (payload: {
     plant_id: string
     supplier_id: string
@@ -163,8 +175,8 @@ export const salesApi = {
   createCustomer: (payload: { name: string; code: string; contact_email?: string; contact_phone?: string }) =>
     apiClient.post<Customer>('/api/sales/customers', payload).then((r) => r.data),
 
-  listOrders: (plantId?: string) =>
-    apiClient.get<SalesOrder[]>('/api/sales/orders', { params: { plant_id: plantId } }).then((r) => r.data),
+  listOrders: (plantId?: string, page?: PageParams): Promise<Paginated<SalesOrder>> =>
+    apiClient.get<SalesOrder[]>('/api/sales/orders', { params: { plant_id: plantId, ...page } }).then(toPaginated),
   createOrder: (payload: {
     plant_id: string
     customer_id: string
@@ -182,10 +194,10 @@ export const maintenanceApi = {
   createAsset: (payload: { plant_id: string; name: string; code: string }) =>
     apiClient.post<Asset>('/api/maintenance/assets', payload).then((r) => r.data),
 
-  listWorkOrders: (plantId?: string) =>
+  listWorkOrders: (plantId?: string, page?: PageParams): Promise<Paginated<MaintenanceWorkOrder>> =>
     apiClient
-      .get<MaintenanceWorkOrder[]>('/api/maintenance/work-orders', { params: { plant_id: plantId } })
-      .then((r) => r.data),
+      .get<MaintenanceWorkOrder[]>('/api/maintenance/work-orders', { params: { plant_id: plantId, ...page } })
+      .then(toPaginated),
   createWorkOrder: (payload: { plant_id: string; asset_id: string; work_order_type: string; priority?: string; description?: string }) =>
     apiClient.post<MaintenanceWorkOrder>('/api/maintenance/work-orders', payload).then((r) => r.data),
   startWorkOrder: (id: string) =>
@@ -197,8 +209,10 @@ export const maintenanceApi = {
 }
 
 export const qualityApi = {
-  listInspections: (plantId?: string) =>
-    apiClient.get<Inspection[]>('/api/quality/inspections', { params: { plant_id: plantId } }).then((r) => r.data),
+  listInspections: (plantId?: string, page?: PageParams): Promise<Paginated<Inspection>> =>
+    apiClient
+      .get<Inspection[]>('/api/quality/inspections', { params: { plant_id: plantId, ...page } })
+      .then(toPaginated),
   createInspection: (payload: {
     plant_id: string
     item_id: string
@@ -221,7 +235,8 @@ export const adminApi = {
     apiClient.patch<Role>(`/api/admin/roles/${id}`, payload).then((r) => r.data),
   deleteRole: (id: string) => apiClient.delete(`/api/admin/roles/${id}`),
 
-  listUsers: () => apiClient.get<AdminUser[]>('/api/admin/users').then((r) => r.data),
+  listUsers: (page?: PageParams): Promise<Paginated<AdminUser>> =>
+    apiClient.get<AdminUser[]>('/api/admin/users', { params: page }).then(toPaginated),
   createUser: (payload: { email: string; full_name: string; password: string; role_ids: string[]; is_superuser?: boolean }) =>
     apiClient.post<AdminUser>('/api/admin/users', payload).then((r) => r.data),
   updateUser: (

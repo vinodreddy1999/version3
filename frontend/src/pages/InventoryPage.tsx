@@ -3,21 +3,27 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftRight, Boxes, Package } from 'lucide-react'
 import { inventoryApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
-import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { usePagingOffset } from '../lib/usePagingOffset'
+import { Alert, Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const MOVEMENTS_PAGE_SIZE = 20
 
 export function InventoryPage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [movementsOffset, setMovementsOffset] = usePagingOffset(selectedPlantId)
 
   const { data: items = [] } = useQuery({ queryKey: ['items'], queryFn: inventoryApi.listItems })
   const { data: balances = [] } = useQuery({
     queryKey: ['balances', selectedPlantId],
     queryFn: () => inventoryApi.listBalances(selectedPlantId ?? undefined),
   })
-  const { data: movements = [] } = useQuery({
-    queryKey: ['movements', selectedPlantId],
-    queryFn: () => inventoryApi.listMovements(selectedPlantId ?? undefined),
+  const { data: movementsPage } = useQuery({
+    queryKey: ['movements', selectedPlantId, movementsOffset],
+    queryFn: () =>
+      inventoryApi.listMovements(selectedPlantId ?? undefined, { limit: MOVEMENTS_PAGE_SIZE, offset: movementsOffset }),
   })
+  const movements = movementsPage?.items ?? []
 
   const [itemForm, setItemForm] = useState({ sku: '', name: '', item_type: 'raw_material', uom: 'EA' })
   const [movementForm, setMovementForm] = useState({ item_id: '', movement_type: 'receipt', quantity: '' })
@@ -175,18 +181,26 @@ export function InventoryPage() {
         {movements.length === 0 ? (
           <EmptyState message="No movements recorded yet." />
         ) : (
-          <Table headers={['Item', 'Type', 'Quantity', 'Reference']}>
-            {movements.map((m) => (
-              <tr key={m.id}>
-                <td className="px-3 py-2">{items.find((i) => i.id === m.item_id)?.sku ?? m.item_id}</td>
-                <td className="px-3 py-2">
-                  <Badge tone={m.movement_type === 'issue' ? 'red' : 'green'}>{m.movement_type}</Badge>
-                </td>
-                <td className="px-3 py-2">{m.quantity}</td>
-                <td className="px-3 py-2 text-slate-500">{m.reference ?? '—'}</td>
-              </tr>
-            ))}
-          </Table>
+          <>
+            <Table headers={['Item', 'Type', 'Quantity', 'Reference']}>
+              {movements.map((m) => (
+                <tr key={m.id}>
+                  <td className="px-3 py-2">{items.find((i) => i.id === m.item_id)?.sku ?? m.item_id}</td>
+                  <td className="px-3 py-2">
+                    <Badge tone={m.movement_type === 'issue' ? 'red' : 'green'}>{m.movement_type}</Badge>
+                  </td>
+                  <td className="px-3 py-2">{m.quantity}</td>
+                  <td className="px-3 py-2 text-slate-500">{m.reference ?? '—'}</td>
+                </tr>
+              ))}
+            </Table>
+            <Pager
+              offset={movementsOffset}
+              limit={MOVEMENTS_PAGE_SIZE}
+              total={movementsPage?.total ?? 0}
+              onOffsetChange={setMovementsOffset}
+            />
+          </>
         )}
       </Card>
     </div>

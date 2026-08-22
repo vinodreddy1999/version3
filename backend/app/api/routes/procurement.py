@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.procurement import PurchaseOrder, PurchaseOrderLine, PurchaseOrderStatus, Supplier
@@ -33,8 +33,15 @@ def create_supplier(
 
 
 @router.get("/suppliers", response_model=list[SupplierOut])
-def list_suppliers(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
-    return db.query(Supplier).filter(Supplier.tenant_id == user.tenant_id).order_by(Supplier.name).all()
+def list_suppliers(
+    response: Response,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+):
+    query = db.query(Supplier).filter(Supplier.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Supplier.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 def _get_owned_supplier(db: Session, user: User, supplier_id: str) -> Supplier:
@@ -84,14 +91,23 @@ def create_purchase_order(
 
 @router.get("/orders", response_model=list[PurchaseOrderOut])
 def list_purchase_orders(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
-    query = (
-        db.query(PurchaseOrder).options(joinedload(PurchaseOrder.lines)).filter(PurchaseOrder.tenant_id == user.tenant_id)
-    )
+    base_query = db.query(PurchaseOrder).filter(PurchaseOrder.tenant_id == user.tenant_id)
     if plant_id:
-        query = query.filter(PurchaseOrder.plant_id == plant_id)
-    return query.order_by(PurchaseOrder.created_at.desc()).all()
+        base_query = base_query.filter(PurchaseOrder.plant_id == plant_id)
+    response.headers["X-Total-Count"] = str(base_query.count())
+    return (
+        base_query.options(joinedload(PurchaseOrder.lines))
+        .order_by(PurchaseOrder.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
 
 @router.post("/orders/{order_id}/submit", response_model=PurchaseOrderOut)

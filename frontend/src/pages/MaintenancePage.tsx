@@ -2,21 +2,30 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { maintenanceApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
+import { usePagingOffset } from '../lib/usePagingOffset'
 import { HardHat, Wrench } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const WORK_ORDERS_PAGE_SIZE = 20
 
 export function MaintenancePage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [workOrdersOffset, setWorkOrdersOffset] = usePagingOffset(selectedPlantId)
 
   const { data: assets = [] } = useQuery({
     queryKey: ['assets', selectedPlantId],
     queryFn: () => maintenanceApi.listAssets(selectedPlantId ?? undefined),
   })
-  const { data: workOrders = [] } = useQuery({
-    queryKey: ['work-orders', selectedPlantId],
-    queryFn: () => maintenanceApi.listWorkOrders(selectedPlantId ?? undefined),
+  const { data: workOrdersPage } = useQuery({
+    queryKey: ['work-orders', selectedPlantId, workOrdersOffset],
+    queryFn: () =>
+      maintenanceApi.listWorkOrders(selectedPlantId ?? undefined, {
+        limit: WORK_ORDERS_PAGE_SIZE,
+        offset: workOrdersOffset,
+      }),
   })
+  const workOrders = workOrdersPage?.items ?? []
 
   const [assetForm, setAssetForm] = useState({ name: '', code: '' })
   const [woForm, setWoForm] = useState({ asset_id: '', work_order_type: 'corrective', description: '' })
@@ -129,6 +138,7 @@ export function MaintenancePage() {
             {workOrders.length === 0 ? (
               <EmptyState message="No work orders yet." />
             ) : (
+              <>
               <Table headers={['Asset', 'Type', 'Status', 'Actions']}>
                 {workOrders.map((wo) => (
                   <tr key={wo.id}>
@@ -164,6 +174,13 @@ export function MaintenancePage() {
                   </tr>
                 ))}
               </Table>
+              <Pager
+                offset={workOrdersOffset}
+                limit={WORK_ORDERS_PAGE_SIZE}
+                total={workOrdersPage?.total ?? 0}
+                onOffsetChange={setWorkOrdersOffset}
+              />
+              </>
             )}
           </Card>
         </>

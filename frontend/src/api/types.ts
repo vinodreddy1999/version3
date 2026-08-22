@@ -1,3 +1,8 @@
+export interface Paginated<T> {
+  items: T[]
+  total: number
+}
+
 export interface TokenResponse {
   access_token: string
   refresh_token: string

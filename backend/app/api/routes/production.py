@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.production import (
@@ -47,12 +47,17 @@ def create_work_center(
 
 @router.get("/work-centers", response_model=list[WorkCenterOut])
 def list_work_centers(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(WorkCenter).filter(WorkCenter.tenant_id == user.tenant_id)
     if plant_id:
         query = query.filter(WorkCenter.plant_id == plant_id)
-    return query.order_by(WorkCenter.name).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(WorkCenter.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 def _bom_to_out(bom: BillOfMaterial) -> BOMOut:
@@ -113,12 +118,19 @@ def create_bom(payload: BOMCreate, db: Session = Depends(get_db_session), user: 
 
 
 @router.get("/boms", response_model=list[BOMOut])
-def list_boms(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
+def list_boms(
+    response: Response,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+):
+    base_query = db.query(BillOfMaterial).filter(BillOfMaterial.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(base_query.count())
     boms = (
-        db.query(BillOfMaterial)
-        .options(joinedload(BillOfMaterial.components).joinedload(BOMComponent.component_item))
-        .filter(BillOfMaterial.tenant_id == user.tenant_id)
+        base_query.options(joinedload(BillOfMaterial.components).joinedload(BOMComponent.component_item))
         .order_by(BillOfMaterial.name)
+        .offset(pagination.offset)
+        .limit(pagination.limit)
         .all()
     )
     return [_bom_to_out(b) for b in boms]
@@ -153,12 +165,22 @@ def create_production_order(
 
 @router.get("/orders", response_model=list[ProductionOrderOut])
 def list_production_orders(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(ProductionOrder).filter(ProductionOrder.tenant_id == user.tenant_id)
     if plant_id:
         query = query.filter(ProductionOrder.plant_id == plant_id)
-    return query.order_by(ProductionOrder.created_at.desc()).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return (
+        query.order_by(ProductionOrder.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
 
 @router.post("/orders/{order_id}/complete", response_model=ProductionOrderOut)

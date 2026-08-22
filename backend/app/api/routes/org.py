@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.models.tenant import Company, Plant
 from app.models.user import User
 from app.schemas.org import CompanyCreate, CompanyOut, PlantCreate, PlantOut
@@ -27,8 +27,15 @@ def create_company(
 
 
 @router.get("/companies", response_model=list[CompanyOut])
-def list_companies(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
-    return db.query(Company).filter(Company.tenant_id == user.tenant_id).order_by(Company.name).all()
+def list_companies(
+    response: Response,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
+):
+    query = db.query(Company).filter(Company.tenant_id == user.tenant_id)
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Company.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 def _get_owned_company(db: Session, user: User, company_id: str) -> Company:
@@ -58,11 +65,14 @@ def create_plant(
 
 @router.get("/plants", response_model=list[PlantOut])
 def list_plants(
+    response: Response,
     company_id: str | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
     query = db.query(Plant).join(Company).filter(Company.tenant_id == user.tenant_id)
     if company_id:
         query = query.filter(Plant.company_id == company_id)
-    return query.order_by(Plant.name).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Plant.name).offset(pagination.offset).limit(pagination.limit).all()

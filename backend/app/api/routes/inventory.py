@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.models.inventory import Item, MovementType, StockBalance, StockMovement
 from app.models.tenant import Plant
 from app.models.user import User
@@ -51,14 +51,17 @@ def create_item(payload: ItemCreate, db: Session = Depends(get_db_session), user
 
 @router.get("/items", response_model=list[ItemOut])
 def list_items(
+    response: Response,
     active_only: bool = True,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
     query = db.query(Item).filter(Item.tenant_id == user.tenant_id)
     if active_only:
         query = query.filter(Item.is_active.is_(True))
-    return query.order_by(Item.sku).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Item.sku).offset(pagination.offset).limit(pagination.limit).all()
 
 
 @router.get("/items/{item_id}", response_model=ItemOut)
@@ -83,16 +86,19 @@ def update_item(
 
 @router.get("/balances", response_model=list[StockBalanceOut])
 def list_balances(
+    response: Response,
     plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
     query = db.query(StockBalance).filter(StockBalance.tenant_id == user.tenant_id)
     if plant_id:
         query = query.filter(StockBalance.plant_id == plant_id)
+    response.headers["X-Total-Count"] = str(query.count())
 
     results = []
-    for balance in query.all():
+    for balance in query.offset(pagination.offset).limit(pagination.limit).all():
         results.append(
             StockBalanceOut(
                 id=balance.id,
@@ -175,8 +181,10 @@ def create_movement(
 
 @router.get("/movements", response_model=list[StockMovementOut])
 def list_movements(
+    response: Response,
     plant_id: str | None = None,
     item_id: str | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
@@ -185,4 +193,10 @@ def list_movements(
         query = query.filter(StockMovement.plant_id == plant_id)
     if item_id:
         query = query.filter(StockMovement.item_id == item_id)
-    return query.order_by(StockMovement.created_at.desc()).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return (
+        query.order_by(StockMovement.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )

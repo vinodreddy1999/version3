@@ -1,9 +1,9 @@
 from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.user import User
@@ -68,12 +68,17 @@ def create_warehouse(
 
 @router.get("/warehouses", response_model=list[WarehouseOut])
 def list_warehouses(
-    plant_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    plant_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(Warehouse).filter(Warehouse.tenant_id == user.tenant_id)
     if plant_id:
         query = query.filter(Warehouse.plant_id == plant_id)
-    return query.order_by(Warehouse.name).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Warehouse.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 @router.post("/zones", response_model=ZoneOut, status_code=status.HTTP_201_CREATED)
@@ -92,12 +97,17 @@ def create_zone(payload: ZoneCreate, db: Session = Depends(get_db_session), user
 
 @router.get("/zones", response_model=list[ZoneOut])
 def list_zones(
-    warehouse_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    warehouse_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(Zone).join(Warehouse).filter(Warehouse.tenant_id == user.tenant_id)
     if warehouse_id:
         query = query.filter(Zone.warehouse_id == warehouse_id)
-    return query.order_by(Zone.name).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Zone.name).offset(pagination.offset).limit(pagination.limit).all()
 
 
 @router.post("/bins", response_model=BinOut, status_code=status.HTTP_201_CREATED)
@@ -116,23 +126,31 @@ def create_bin(payload: BinCreate, db: Session = Depends(get_db_session), user: 
 
 @router.get("/bins", response_model=list[BinOut])
 def list_bins(
-    zone_id: str | None = None, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
+    response: Response,
+    zone_id: str | None = None,
+    pagination: PaginationParams = Depends(),
+    db: Session = Depends(get_db_session),
+    user: User = Depends(get_current_user),
 ):
     query = db.query(Bin).join(Zone).join(Warehouse).filter(Warehouse.tenant_id == user.tenant_id)
     if zone_id:
         query = query.filter(Bin.zone_id == zone_id)
-    return query.order_by(Bin.code).all()
+    response.headers["X-Total-Count"] = str(query.count())
+    return query.order_by(Bin.code).offset(pagination.offset).limit(pagination.limit).all()
 
 
 @router.get("/bin-stock", response_model=list[BinStockOut])
 def list_bin_stock(
+    response: Response,
     warehouse_id: str | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
     query = db.query(BinStock).filter(BinStock.tenant_id == user.tenant_id)
     if warehouse_id:
         query = query.join(Bin).join(Zone).filter(Zone.warehouse_id == warehouse_id)
+    response.headers["X-Total-Count"] = str(query.count())
     return [
         BinStockOut(
             bin_id=row.bin_id,
@@ -141,7 +159,7 @@ def list_bin_stock(
             item_sku=row.item.sku,
             quantity=row.quantity,
         )
-        for row in query.all()
+        for row in query.offset(pagination.offset).limit(pagination.limit).all()
     ]
 
 

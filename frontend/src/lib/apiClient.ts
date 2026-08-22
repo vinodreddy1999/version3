@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios, { type AxiosResponse } from 'axios'
+import type { Paginated } from '../api/types'
 
 const ACCESS_TOKEN_KEY = 'metam.access_token'
 const REFRESH_TOKEN_KEY = 'metam.refresh_token'
@@ -19,6 +20,16 @@ export const tokenStorage = {
 export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000',
 })
+
+// Backend list endpoints return the raw array with the total count on the
+// X-Total-Count header rather than a wrapper object, so this pairs the two
+// back up into a shape the frontend can page through.
+export function toPaginated<T>(response: AxiosResponse<T[]>): Paginated<T> {
+  return {
+    items: response.data,
+    total: Number(response.headers['x-total-count'] ?? response.data.length),
+  }
+}
 
 apiClient.interceptors.request.use((config) => {
   const token = tokenStorage.getAccessToken()

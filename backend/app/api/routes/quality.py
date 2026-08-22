@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.quality import Defect, DefectStatus, Inspection, InspectionResult
 from app.models.user import User
@@ -45,21 +45,26 @@ def create_inspection(
 
 @router.get("/inspections", response_model=list[InspectionOut])
 def list_inspections(
+    response: Response,
     plant_id: str | None = None,
     result: InspectionResult | None = None,
+    pagination: PaginationParams = Depends(),
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
-    query = (
-        db.query(Inspection)
-        .options(joinedload(Inspection.defects))
-        .filter(Inspection.tenant_id == user.tenant_id)
-    )
+    base_query = db.query(Inspection).filter(Inspection.tenant_id == user.tenant_id)
     if plant_id:
-        query = query.filter(Inspection.plant_id == plant_id)
+        base_query = base_query.filter(Inspection.plant_id == plant_id)
     if result:
-        query = query.filter(Inspection.result == result)
-    return query.order_by(Inspection.created_at.desc()).all()
+        base_query = base_query.filter(Inspection.result == result)
+    response.headers["X-Total-Count"] = str(base_query.count())
+    return (
+        base_query.options(joinedload(Inspection.defects))
+        .order_by(Inspection.created_at.desc())
+        .offset(pagination.offset)
+        .limit(pagination.limit)
+        .all()
+    )
 
 
 @router.post("/defects/{defect_id}/resolve", response_model=InspectionOut)

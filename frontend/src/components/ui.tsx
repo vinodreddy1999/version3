@@ -1,5 +1,5 @@
 import type { InputHTMLAttributes, ReactNode, SelectHTMLAttributes } from 'react'
-import { AlertCircle, CheckCircle2, Inbox, X } from 'lucide-react'
+import { AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Inbox, X } from 'lucide-react'
 
 export function Card({
   title,
@@ -215,6 +215,49 @@ export function Modal({
           </button>
         </div>
         {children}
+      </div>
+    </div>
+  )
+}
+
+export function Pager({
+  offset,
+  limit,
+  total,
+  onOffsetChange,
+}: {
+  offset: number
+  limit: number
+  total: number
+  onOffsetChange: (offset: number) => void
+}) {
+  if (total <= limit && offset === 0) return null
+
+  const start = total === 0 ? 0 : offset + 1
+  const end = Math.min(offset + limit, total)
+
+  return (
+    <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-3 text-sm text-slate-500">
+      <span>
+        {start}–{end} of {total}
+      </span>
+      <div className="flex gap-1">
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={offset === 0}
+          onClick={() => onOffsetChange(Math.max(0, offset - limit))}
+        >
+          <ChevronLeft className="h-4 w-4" /> Prev
+        </Button>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={offset + limit >= total}
+          onClick={() => onOffsetChange(offset + limit)}
+        >
+          Next <ChevronRight className="h-4 w-4" />
+        </Button>
       </div>
     </div>
   )

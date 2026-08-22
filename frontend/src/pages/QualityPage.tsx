@@ -2,18 +2,27 @@ import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, qualityApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
+import { usePagingOffset } from '../lib/usePagingOffset'
 import { ClipboardCheck } from 'lucide-react'
-import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Select, Table } from '../components/ui'
+import { Badge, Button, Card, EmptyState, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
+
+const INSPECTIONS_PAGE_SIZE = 20
 
 export function QualityPage() {
   const queryClient = useQueryClient()
   const { selectedPlantId } = usePlant()
+  const [inspectionsOffset, setInspectionsOffset] = usePagingOffset(selectedPlantId)
 
   const { data: items = [] } = useQuery({ queryKey: ['items'], queryFn: inventoryApi.listItems })
-  const { data: inspections = [] } = useQuery({
-    queryKey: ['inspections', selectedPlantId],
-    queryFn: () => qualityApi.listInspections(selectedPlantId ?? undefined),
+  const { data: inspectionsPage } = useQuery({
+    queryKey: ['inspections', selectedPlantId, inspectionsOffset],
+    queryFn: () =>
+      qualityApi.listInspections(selectedPlantId ?? undefined, {
+        limit: INSPECTIONS_PAGE_SIZE,
+        offset: inspectionsOffset,
+      }),
   })
+  const inspections = inspectionsPage?.items ?? []
 
   const [form, setForm] = useState({
     item_id: '',
@@ -93,6 +102,7 @@ export function QualityPage() {
           {inspections.length === 0 ? (
             <EmptyState message="No inspections logged yet." />
           ) : (
+            <>
             <div className="flex flex-col gap-3">
               {inspections.map((insp) => (
                 <div key={insp.id} className="rounded-md border border-slate-200 p-3">
@@ -125,6 +135,13 @@ export function QualityPage() {
                 </div>
               ))}
             </div>
+            <Pager
+              offset={inspectionsOffset}
+              limit={INSPECTIONS_PAGE_SIZE}
+              total={inspectionsPage?.total ?? 0}
+              onOffsetChange={setInspectionsOffset}
+            />
+            </>
           )}
         </Card>
       )}
