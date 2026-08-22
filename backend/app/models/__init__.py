@@ -1,6 +1,7 @@
 from app.models.audit import AuditLog  # noqa: F401
 from app.models.inventory import Item, StockBalance, StockMovement  # noqa: F401
 from app.models.maintenance import Asset, MaintenanceWorkOrder  # noqa: F401
+from app.models.password_reset import PasswordResetToken  # noqa: F401
 from app.models.procurement import PurchaseOrder, PurchaseOrderLine, Supplier  # noqa: F401
 from app.models.production import BillOfMaterial, BOMComponent, ProductionOrder, WorkCenter  # noqa: F401
 from app.models.quality import Defect, Inspection  # noqa: F401

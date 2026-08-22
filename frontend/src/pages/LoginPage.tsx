@@ -2,13 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Factory } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import { authApi } from '../api/endpoints'
 import { Alert, Button, Field, Input } from '../components/ui'
 
 export function LoginPage() {
-  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
   const { login, registerTenant } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const [loginForm, setLoginForm] = useState({ email: '', password: '', tenant_slug: '' })
@@ -19,10 +21,12 @@ export function LoginPage() {
     admin_password: '',
     admin_full_name: '',
   })
+  const [forgotForm, setForgotForm] = useState({ email: '', tenant_slug: '' })
 
-  const switchMode = (next: 'login' | 'register') => {
+  const switchMode = (next: 'login' | 'register' | 'forgot') => {
     setMode(next)
     setError(null)
+    setNotice(null)
   }
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -56,6 +60,22 @@ export function LoginPage() {
     }
   }
 
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    setIsSubmitting(true)
+    try {
+      const { detail } = await authApi.forgotPassword(forgotForm)
+      setNotice(detail)
+    } catch {
+      // The endpoint never fails for a normal "unknown account" case, so a
+      // thrown error here means something's actually wrong (rate limit, etc).
+      setError('Could not process that request. Please try again shortly.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-white to-indigo-50 p-4">
       <div className="w-full max-w-sm">
@@ -68,28 +88,31 @@ export function LoginPage() {
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-xl shadow-slate-200/50">
-          <div className="mb-5 flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
-            <button
-              className={`flex-1 rounded-md py-1.5 font-medium transition-colors ${
-                mode === 'login' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-              onClick={() => switchMode('login')}
-            >
-              Sign in
-            </button>
-            <button
-              className={`flex-1 rounded-md py-1.5 font-medium transition-colors ${
-                mode === 'register' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-              }`}
-              onClick={() => switchMode('register')}
-            >
-              New organization
-            </button>
-          </div>
+          {mode !== 'forgot' && (
+            <div className="mb-5 flex gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+              <button
+                className={`flex-1 rounded-md py-1.5 font-medium transition-colors ${
+                  mode === 'login' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+                onClick={() => switchMode('login')}
+              >
+                Sign in
+              </button>
+              <button
+                className={`flex-1 rounded-md py-1.5 font-medium transition-colors ${
+                  mode === 'register' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'
+                }`}
+                onClick={() => switchMode('register')}
+              >
+                New organization
+              </button>
+            </div>
+          )}
 
           {error && <Alert onDismiss={() => setError(null)}>{error}</Alert>}
+          {notice && <Alert tone="success" onDismiss={() => setNotice(null)}>{notice}</Alert>}
 
-          {mode === 'login' ? (
+          {mode === 'login' && (
             <form className="flex flex-col gap-3" onSubmit={handleLogin}>
               <Field label="Organization slug">
                 <Input
@@ -115,11 +138,20 @@ export function LoginPage() {
                   onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                 />
               </Field>
-              <Button type="submit" disabled={isSubmitting} className="mt-2 w-full">
+              <button
+                type="button"
+                onClick={() => switchMode('forgot')}
+                className="-mt-1 text-left text-xs font-medium text-indigo-600 hover:text-indigo-700"
+              >
+                Forgot password?
+              </button>
+              <Button type="submit" disabled={isSubmitting} className="mt-1 w-full">
                 {isSubmitting ? 'Signing in…' : 'Sign in'}
               </Button>
             </form>
-          ) : (
+          )}
+
+          {mode === 'register' && (
             <form className="flex flex-col gap-3" onSubmit={handleRegister}>
               <Field label="Organization name">
                 <Input
@@ -165,6 +197,42 @@ export function LoginPage() {
                 {isSubmitting ? 'Creating…' : 'Create organization'}
               </Button>
             </form>
+          )}
+
+          {mode === 'forgot' && (
+            <>
+              <p className="mb-4 text-sm text-slate-500">
+                Enter your organization and email — if there's an account, we'll send a reset link.
+              </p>
+              <form className="flex flex-col gap-3" onSubmit={handleForgotPassword}>
+                <Field label="Organization slug">
+                  <Input
+                    required
+                    value={forgotForm.tenant_slug}
+                    onChange={(e) => setForgotForm({ ...forgotForm, tenant_slug: e.target.value })}
+                    placeholder="acme"
+                  />
+                </Field>
+                <Field label="Email">
+                  <Input
+                    type="email"
+                    required
+                    value={forgotForm.email}
+                    onChange={(e) => setForgotForm({ ...forgotForm, email: e.target.value })}
+                  />
+                </Field>
+                <Button type="submit" disabled={isSubmitting} className="mt-1 w-full">
+                  {isSubmitting ? 'Sending…' : 'Send reset link'}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => switchMode('login')}
+                  className="text-center text-xs font-medium text-slate-500 hover:text-slate-700"
+                >
+                  Back to sign in
+                </button>
+              </form>
+            </>
           )}
         </div>
       </div>

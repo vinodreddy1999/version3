@@ -20,6 +20,18 @@ class Settings(BaseSettings):
 
     rate_limit_enabled: bool = True
 
+    frontend_base_url: str = "http://localhost:5173"
+
+    # If smtp_host is unset, email "sends" fall back to logging the message
+    # instead (see app/core/email.py) — fine for local dev, never for a
+    # shared/deployed environment.
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = "no-reply@metam.local"
+    smtp_use_tls: bool = True
+
 settings = Settings()
 
 if not settings.jwt_secret:

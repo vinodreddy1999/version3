@@ -48,6 +48,12 @@ export const authApi = {
   login: (payload: { email: string; password: string; tenant_slug: string }) =>
     apiClient.post<TokenResponse>('/api/auth/login', payload).then((r) => r.data),
 
+  forgotPassword: (payload: { email: string; tenant_slug: string }) =>
+    apiClient.post<{ detail: string }>('/api/auth/forgot-password', payload).then((r) => r.data),
+
+  resetPassword: (payload: { token: string; new_password: string }) =>
+    apiClient.post<{ detail: string }>('/api/auth/reset-password', payload).then((r) => r.data),
+
   me: () => apiClient.get<CurrentUser>('/api/auth/me').then((r) => r.data),
 }
 

@@ -3,6 +3,7 @@ import { useAuth } from './contexts/AuthContext'
 import { PlantProvider } from './contexts/PlantContext'
 import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
+import { ResetPasswordPage } from './pages/ResetPasswordPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { OrgPage } from './pages/OrgPage'
 import { InventoryPage } from './pages/InventoryPage'
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/" element={<ProtectedApp />}>
         <Route index element={<DashboardPage />} />
         <Route path="org" element={<OrgPage />} />

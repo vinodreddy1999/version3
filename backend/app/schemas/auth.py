@@ -35,3 +35,17 @@ class RegisterTenantRequest(BaseModel):
     admin_email: EmailStr
     admin_password: str = Field(min_length=8, max_length=200)
     admin_full_name: str = Field(min_length=2, max_length=200)
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    tenant_slug: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str
+    new_password: str = Field(min_length=8, max_length=200)
+
+
+class MessageResponse(BaseModel):
+    detail: str
