@@ -83,6 +83,12 @@ def test_refresh_rejects_access_token_used_as_refresh_token(client):
 
 def test_me_rejects_tampered_token(client):
     tokens = _register(client).json()
-    tampered = tokens["access_token"][:-1] + ("A" if tokens["access_token"][-1] != "A" else "B")
+    token = tokens["access_token"]
+    # Flip a character in the middle of the signature segment rather than the
+    # last character: base64's final character can carry unused padding bits,
+    # so mutating it doesn't always change the decoded signature bytes.
+    mid = len(token) // 2
+    replacement = "A" if token[mid] != "A" else "B"
+    tampered = token[:mid] + replacement + token[mid + 1 :]
     response = client.get("/api/auth/me", headers={"Authorization": f"Bearer {tampered}"})
     assert response.status_code == 401

@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes.auth import router as auth_router
 from app.api.routes.inventory import router as inventory_router
 from app.api.routes.org import router as org_router
+from app.api.routes.production import router as production_router
 from app.api.routes.warehouse import router as warehouse_router
 from app.core.config import settings
 from app.core.db import Base, engine
@@ -33,6 +34,7 @@ app.include_router(auth_router)
 app.include_router(org_router)
 app.include_router(inventory_router)
 app.include_router(warehouse_router)
+app.include_router(production_router)
 
 
 @app.get("/health")
