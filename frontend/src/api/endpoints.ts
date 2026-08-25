@@ -262,6 +262,9 @@ export const adminApi = {
 
   listAuditLog: (page?: PageParams): Promise<Paginated<AuditLogEntry>> =>
     apiClient.get<AuditLogEntry[]>('/api/admin/audit-log', { params: page }).then(toPaginated),
+
+  impersonateUser: (userId: string) =>
+    apiClient.post<{ access_token: string }>(`/api/admin/users/${userId}/impersonate`).then((r) => r.data),
 }
 
 export const attachmentsApi = {

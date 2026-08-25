@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { authApi } from '../api/endpoints'
+import { useQueryClient } from '@tanstack/react-query'
+import { adminApi, authApi } from '../api/endpoints'
 import type { CurrentUser } from '../api/types'
 import { tokenStorage } from '../lib/apiClient'
 
@@ -16,11 +17,14 @@ interface AuthContextValue {
   }) => Promise<void>
   logout: () => void
   hasPermission: (code: string) => boolean
+  impersonate: (userId: string) => Promise<void>
+  stopImpersonating: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<CurrentUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
@@ -65,8 +69,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const hasPermission = (code: string) => user?.permissions.includes(code) ?? false
 
+  // Switching identity mid-session can leave every cached list/detail query
+  // holding the previous user's view of the data (different permissions can
+  // mean different results even within the same tenant), so both directions
+  // clear the query cache before re-hydrating from /me.
+  const impersonate = async (userId: string) => {
+    const { access_token } = await adminApi.impersonateUser(userId)
+    tokenStorage.beginImpersonation(access_token)
+    queryClient.clear()
+    await loadUser()
+  }
+
+  const stopImpersonating = async () => {
+    tokenStorage.endImpersonation()
+    queryClient.clear()
+    await loadUser()
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, registerTenant, logout, hasPermission }}>
+    <AuthContext.Provider
+      value={{ user, isLoading, login, registerTenant, logout, hasPermission, impersonate, stopImpersonating }}
+    >
       {children}
     </AuthContext.Provider>
   )

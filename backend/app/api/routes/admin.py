@@ -6,7 +6,7 @@ from sqlalchemy.orm import joinedload
 from app.api.deps import PaginationParams, get_current_user, get_db_session, require_permissions
 from app.core.audit import record_audit
 from app.core.permissions import PERMISSION_CODES
-from app.core.security import hash_password
+from app.core.security import create_access_token, hash_password
 from app.models.audit import AuditLog
 from app.models.user import Permission, Role, User
 from app.schemas.admin import (
@@ -19,6 +19,7 @@ from app.schemas.admin import (
     UserCreate,
     UserUpdate,
 )
+from app.schemas.auth import ImpersonateResponse
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
@@ -278,6 +279,48 @@ def update_user(
     db.commit()
     db.refresh(target)
     return _user_to_out(target)
+
+
+@router.post("/users/{user_id}/impersonate", response_model=ImpersonateResponse)
+def impersonate_user(
+    user_id: str,
+    db: Session = Depends(get_db_session),
+    admin: User = Depends(get_current_user),
+):
+    # Deliberately gated on is_superuser rather than a permission code:
+    # impersonation is close to account takeover, so it stays reserved for
+    # the superuser flag rather than something a granted permission can
+    # extend to a regular admin.
+    if not admin.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only a super admin can impersonate users")
+
+    target = _get_owned_target_user(db, admin, user_id)
+    if target.id == admin.id:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="You cannot impersonate yourself")
+    if not target.is_active:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Cannot impersonate an inactive user")
+
+    record_audit(
+        db,
+        tenant_id=admin.tenant_id,
+        actor=admin,
+        action="user.impersonate_start",
+        entity_type="user",
+        entity_id=target.id,
+        summary=f"{admin.email} started impersonating {target.email}",
+    )
+    db.commit()
+
+    # No refresh token: impersonation sessions expire with the access token
+    # rather than being silently renewable, and "stop impersonating" is a
+    # first-class action in the UI instead.
+    access_token = create_access_token(
+        target.id,
+        tenant_id=target.tenant_id,
+        roles=[role.name for role in target.roles],
+        impersonated_by=admin.id,
+    )
+    return ImpersonateResponse(access_token=access_token)
 
 
 @router.get("/audit-log", response_model=list[AuditLogOut])

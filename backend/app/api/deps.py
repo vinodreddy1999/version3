@@ -49,6 +49,10 @@ def get_current_user(
     user = db.get(User, user_id) if user_id else None
     if user is None or not user.is_active:
         raise credentials_error
+    # Transient, unmapped attribute — not persisted, just threads the
+    # impersonation claim from the token through to route handlers (namely
+    # /api/auth/me) without a second dependency every route would need.
+    user.impersonated_by_id = payload.get("impersonated_by")
     return user
 
 

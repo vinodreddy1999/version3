@@ -3,6 +3,10 @@ import type { Paginated } from '../api/types'
 
 const ACCESS_TOKEN_KEY = 'metam.access_token'
 const REFRESH_TOKEN_KEY = 'metam.refresh_token'
+// Stashes the impersonating admin's own tokens while an impersonated
+// session is active, so "return to admin" can restore them exactly.
+const IMPERSONATOR_ACCESS_KEY = 'metam.impersonator_access_token'
+const IMPERSONATOR_REFRESH_KEY = 'metam.impersonator_refresh_token'
 
 export const tokenStorage = {
   getAccessToken: () => localStorage.getItem(ACCESS_TOKEN_KEY),
@@ -14,6 +18,27 @@ export const tokenStorage = {
   clear: () => {
     localStorage.removeItem(ACCESS_TOKEN_KEY)
     localStorage.removeItem(REFRESH_TOKEN_KEY)
+    localStorage.removeItem(IMPERSONATOR_ACCESS_KEY)
+    localStorage.removeItem(IMPERSONATOR_REFRESH_KEY)
+  },
+  // Swaps the active session over to an impersonated user's access token
+  // (issued with no refresh token — see backend), stashing the admin's own
+  // tokens so they can be restored later.
+  beginImpersonation: (impersonatedAccessToken: string) => {
+    const adminAccess = localStorage.getItem(ACCESS_TOKEN_KEY)
+    const adminRefresh = localStorage.getItem(REFRESH_TOKEN_KEY)
+    if (adminAccess) localStorage.setItem(IMPERSONATOR_ACCESS_KEY, adminAccess)
+    if (adminRefresh) localStorage.setItem(IMPERSONATOR_REFRESH_KEY, adminRefresh)
+    localStorage.setItem(ACCESS_TOKEN_KEY, impersonatedAccessToken)
+    localStorage.removeItem(REFRESH_TOKEN_KEY)
+  },
+  endImpersonation: () => {
+    const adminAccess = localStorage.getItem(IMPERSONATOR_ACCESS_KEY)
+    const adminRefresh = localStorage.getItem(IMPERSONATOR_REFRESH_KEY)
+    localStorage.removeItem(IMPERSONATOR_ACCESS_KEY)
+    localStorage.removeItem(IMPERSONATOR_REFRESH_KEY)
+    if (adminAccess) localStorage.setItem(ACCESS_TOKEN_KEY, adminAccess)
+    if (adminRefresh) localStorage.setItem(REFRESH_TOKEN_KEY, adminRefresh)
   },
 }
 

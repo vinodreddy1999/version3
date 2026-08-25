@@ -17,6 +17,14 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
+class ImpersonatorOut(BaseModel):
+    id: str
+    email: str
+    full_name: str
+
+    model_config = {"from_attributes": True}
+
+
 class UserOut(BaseModel):
     id: str
     email: str
@@ -25,8 +33,14 @@ class UserOut(BaseModel):
     is_superuser: bool
     roles: list[str]
     permissions: list[str]
+    impersonated_by: ImpersonatorOut | None = None
 
     model_config = {"from_attributes": True}
+
+
+class ImpersonateResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
 
 
 class RegisterTenantRequest(BaseModel):

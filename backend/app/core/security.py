@@ -37,8 +37,15 @@ def _create_token(subject: str, expires_delta: timedelta, extra_claims: dict[str
     return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
 
 
-def create_access_token(subject: str, tenant_id: str | None = None, roles: list[str] | None = None) -> str:
+def create_access_token(
+    subject: str,
+    tenant_id: str | None = None,
+    roles: list[str] | None = None,
+    impersonated_by: str | None = None,
+) -> str:
     extra = {"tenant_id": tenant_id, "roles": roles or []}
+    if impersonated_by:
+        extra["impersonated_by"] = impersonated_by
     return _create_token(
         subject,
         timedelta(minutes=settings.access_token_expire_minutes),

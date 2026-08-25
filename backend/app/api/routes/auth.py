@@ -234,12 +234,14 @@ def reset_password(
 
 
 @router.get("/me", response_model=UserOut)
-def me(user: User = Depends(get_current_user)) -> UserOut:
+def me(db: Session = Depends(get_db_session), user: User = Depends(get_current_user)) -> UserOut:
     permissions = (
         sorted(PERMISSION_CODES)
         if user.is_superuser
         else sorted({perm.code for role in user.roles for perm in role.permissions})
     )
+    impersonator_id = getattr(user, "impersonated_by_id", None)
+    impersonator = db.get(User, impersonator_id) if impersonator_id else None
     return UserOut(
         id=user.id,
         email=user.email,
@@ -248,4 +250,5 @@ def me(user: User = Depends(get_current_user)) -> UserOut:
         is_superuser=user.is_superuser,
         roles=[role.name for role in user.roles],
         permissions=permissions,
+        impersonated_by=impersonator,
     )

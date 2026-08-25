@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   ShoppingCart,
   Truck,
+  UserCog,
   Users,
   Warehouse as WarehouseIcon,
   Wrench,
@@ -46,96 +47,113 @@ function initials(name: string) {
 }
 
 export function Layout() {
-  const { user, logout, hasPermission } = useAuth()
+  const { user, logout, hasPermission, stopImpersonating } = useAuth()
   const { plants, selectedPlantId, setSelectedPlantId } = usePlant()
   const visibleAdminItems = ADMIN_NAV_ITEMS.filter((item) => hasPermission(item.permission))
+  const impersonator = user?.impersonated_by
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
-        <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-5">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm">
-            M
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      {impersonator && (
+        <div className="flex items-center justify-center gap-3 bg-amber-500 px-4 py-2 text-sm font-medium text-amber-950">
+          <UserCog className="h-4 w-4" />
+          <span>
+            Viewing as <strong>{user.full_name}</strong> ({user.email}) — impersonated by {impersonator.full_name}
           </span>
-          <p className="text-base font-bold text-slate-800">Metam ERP</p>
+          <button
+            onClick={() => stopImpersonating()}
+            className="rounded-md bg-amber-950/10 px-2 py-0.5 font-semibold hover:bg-amber-950/20"
+          >
+            Return to admin
+          </button>
         </div>
-        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
-          {NAV_ITEMS.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                }`
-              }
-            >
-              <item.icon className="h-4 w-4" strokeWidth={2} />
-              {item.label}
-            </NavLink>
-          ))}
-
-          {visibleAdminItems.length > 0 && (
-            <>
-              <p className="mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Admin</p>
-              {visibleAdminItems.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  className={({ isActive }) =>
-                    `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-                    }`
-                  }
-                >
-                  <item.icon className="h-4 w-4" strokeWidth={2} />
-                  {item.label}
-                </NavLink>
-              ))}
-            </>
-          )}
-        </nav>
-      </aside>
-
-      <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-500">Plant</span>
-            <Select
-              value={selectedPlantId ?? ''}
-              onChange={(e) => setSelectedPlantId(e.target.value || null)}
-              className="w-48"
-            >
-              <option value="">All plants</option>
-              {plants.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </Select>
+      )}
+      <div className="flex min-h-0 flex-1">
+        <aside className="flex w-60 shrink-0 flex-col border-r border-slate-200 bg-white">
+          <div className="flex items-center gap-2 border-b border-slate-100 px-5 py-5">
+            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 text-sm font-bold text-white shadow-sm">
+              M
+            </span>
+            <p className="text-base font-bold text-slate-800">Metam ERP</p>
           </div>
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
-                {user ? initials(user.full_name) : ''}
-              </span>
-              <span className="text-sm font-medium text-slate-700">{user?.full_name}</span>
+          <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3">
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={({ isActive }) =>
+                  `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                  }`
+                }
+              >
+                <item.icon className="h-4 w-4" strokeWidth={2} />
+                {item.label}
+              </NavLink>
+            ))}
+
+            {visibleAdminItems.length > 0 && (
+              <>
+                <p className="mt-4 mb-1 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Admin</p>
+                {visibleAdminItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                        isActive ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      }`
+                    }
+                  >
+                    <item.icon className="h-4 w-4" strokeWidth={2} />
+                    {item.label}
+                  </NavLink>
+                ))}
+              </>
+            )}
+          </nav>
+        </aside>
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-slate-500">Plant</span>
+              <Select
+                value={selectedPlantId ?? ''}
+                onChange={(e) => setSelectedPlantId(e.target.value || null)}
+                className="w-48"
+              >
+                <option value="">All plants</option>
+                {plants.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </Select>
             </div>
-            <button
-              onClick={logout}
-              className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-            >
-              <LogOut className="h-4 w-4" />
-              Log out
-            </button>
-          </div>
-        </header>
-        <main className="flex-1 overflow-y-auto p-6">
-          <div className="mx-auto flex max-w-6xl flex-col gap-6">
-            <Outlet />
-          </div>
-        </main>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-xs font-semibold text-indigo-700">
+                  {user ? initials(user.full_name) : ''}
+                </span>
+                <span className="text-sm font-medium text-slate-700">{user?.full_name}</span>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center gap-1 rounded-lg px-2 py-1.5 text-sm font-medium text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+              >
+                <LogOut className="h-4 w-4" />
+                Log out
+              </button>
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto p-6">
+            <div className="mx-auto flex max-w-6xl flex-col gap-6">
+              <Outlet />
+            </div>
+          </main>
+        </div>
       </div>
     </div>
   )

@@ -9,6 +9,12 @@ export interface TokenResponse {
   token_type: string
 }
 
+export interface Impersonator {
+  id: string
+  email: string
+  full_name: string
+}
+
 export interface CurrentUser {
   id: string
   email: string
@@ -17,6 +23,7 @@ export interface CurrentUser {
   is_superuser: boolean
   roles: string[]
   permissions: string[]
+  impersonated_by: Impersonator | null
 }
 
 export interface Permission {

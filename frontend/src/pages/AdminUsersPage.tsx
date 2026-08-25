@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { UserPlus } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import { UserCog, UserPlus } from 'lucide-react'
 import { adminApi } from '../api/endpoints'
 import { useAuth } from '../contexts/AuthContext'
 import type { AdminUser } from '../api/types'
@@ -11,8 +12,11 @@ const USERS_PAGE_SIZE = 20
 
 export function AdminUsersPage() {
   const queryClient = useQueryClient()
-  const { user: currentUser } = useAuth()
+  const navigate = useNavigate()
+  const { user: currentUser, impersonate } = useAuth()
   const [usersOffset, setUsersOffset] = useState(0)
+  const [impersonateError, setImpersonateError] = useState<string | null>(null)
+  const [isImpersonating, setIsImpersonating] = useState(false)
 
   const { data: usersPage } = useQuery({
     queryKey: ['admin-users', usersOffset],
@@ -63,6 +67,22 @@ export function AdminUsersPage() {
   const openEdit = (u: AdminUser) => {
     setEditingUser(u)
     setEditRoleIds(u.role_ids)
+    setImpersonateError(null)
+  }
+
+  const handleImpersonate = async (targetUserId: string) => {
+    setImpersonateError(null)
+    setIsImpersonating(true)
+    try {
+      await impersonate(targetUserId)
+      setEditingUser(null)
+      navigate('/')
+    } catch (err: unknown) {
+      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setImpersonateError(message ?? 'Could not start impersonating this user.')
+    } finally {
+      setIsImpersonating(false)
+    }
   }
 
   return (
@@ -232,6 +252,33 @@ export function AdminUsersPage() {
               {updateUser.isPending ? 'Saving…' : 'Save roles'}
             </Button>
           </form>
+
+          {currentUser?.is_superuser && editingUser.id !== currentUser.id && (
+            <div className="mt-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 p-3">
+              <div>
+                <p className="text-sm font-medium text-amber-900">Impersonate this user</p>
+                <p className="text-xs text-amber-700">
+                  {editingUser.is_active
+                    ? 'See exactly what they see — you can return to your own account at any time.'
+                    : 'Activate this user first to impersonate them.'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                disabled={!editingUser.is_active || isImpersonating}
+                onClick={() => handleImpersonate(editingUser.id)}
+              >
+                <UserCog className="h-3.5 w-3.5" /> {isImpersonating ? 'Switching…' : 'Impersonate'}
+              </Button>
+            </div>
+          )}
+          {impersonateError && (
+            <div className="mt-3">
+              <Alert onDismiss={() => setImpersonateError(null)}>{impersonateError}</Alert>
+            </div>
+          )}
         </Modal>
       )}
     </div>
