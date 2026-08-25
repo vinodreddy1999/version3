@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-metam}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-metam}
       JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env}
       ENVIRONMENT: production
-      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:8080}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-https://${DOMAIN:?set DOMAIN in .env}}
       SMTP_HOST: ${SMTP_HOST:-}
       SMTP_PORT: ${SMTP_PORT:-587}
       SMTP_USERNAME: ${SMTP_USERNAME:-}
@@ -39,17 +39,43 @@ services:
     build:
       context: ./frontend
       args:
-        # Relative path, proxied to the backend by nginx.conf — same-origin,
-        # no CORS needed, and works on any host without rebuilding the image.
+        # Relative path, proxied to the backend by Caddy — same-origin, no
+        # CORS needed, works on any host without rebuilding the image.
         # Override only for a split-domain setup (frontend and backend on
         # different hosts/origins).
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
     depends_on:
       backend:
         condition: service_healthy
+    expose:
+      - "8080"
+
+  # Sole public ingress: terminates TLS and routes /api/* to the backend,
+  # everything else to the frontend's nginx. Set DOMAIN to a real hostname
+  # with DNS already pointing at this host and Caddy obtains + renews a
+  # Let's Encrypt certificate automatically — nothing else to configure.
+  # For local/no-domain use, set DOMAIN=localhost (or the server's bare IP)
+  # and Caddy issues a locally-trusted cert instead; browsers show a
+  # one-time warning since that cert isn't from a public CA.
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     ports:
-      - "8080:8080"
+      - "80:80"
+      - "443:443"
 
 volumes:
   db-data:
   attachments-data:
+  caddy-data:
+  caddy-config:

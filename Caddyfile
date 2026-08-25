@@ -1,0 +1,14 @@
+{$DOMAIN} {
+	encode gzip
+
+	# API calls go straight to the backend — bypasses the frontend's nginx
+	# entirely, so there's no double-proxy hop for the browser's XHR/fetch
+	# traffic. Everything else is the built SPA served by nginx.
+	handle /api/* {
+		reverse_proxy backend:8000
+	}
+
+	handle {
+		reverse_proxy frontend:8080
+	}
+}

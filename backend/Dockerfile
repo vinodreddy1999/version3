@@ -27,9 +27,12 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 #
 # --proxy-headers/--forwarded-allow-ips trust X-Forwarded-* from any peer:
 # safe here because this container is never published to the host (see
-# docker-compose.yml) — only nginx, on the same private compose network, can
-# reach it. Without this, request.client.host (and slowapi's rate-limit key)
-# would resolve to nginx's container IP for every request instead of the
-# real client, collapsing every visitor into one shared rate-limit bucket.
+# docker-compose.yml) — only Caddy, on the same private compose network,
+# reaches it directly. Without this, request.client.host (and slowapi's
+# rate-limit key) would resolve to Caddy's container IP for every request
+# instead of the real client, collapsing every visitor into one shared
+# rate-limit bucket. (Caddy's own reverse_proxy already discards any
+# X-Forwarded-For a client sends it, so this doesn't reopen the IP-spoofing
+# hole nginx's default would have — see frontend/nginx.conf's git history.)
 ENTRYPOINT ["./docker-entrypoint.sh"]
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

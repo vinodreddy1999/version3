@@ -63,22 +63,38 @@ using the app — every action goes through the real backend.
 ## Running with Docker
 
 ```bash
-cp .env.example .env   # set POSTGRES_PASSWORD and JWT_SECRET
+cp .env.example .env   # set POSTGRES_PASSWORD, JWT_SECRET, and DOMAIN
 docker compose up --build
 ```
 
-This starts Postgres, the backend (migrations run automatically on
-container start — see the caveat in `backend/Dockerfile` for multi-replica
-deployments), and the frontend served by nginx on port 8080. **Port 8080 is
-the only thing you need to expose publicly** — nginx serves the built
-frontend and reverse-proxies `/api/*` to the backend on the private compose
-network (see `frontend/nginx.conf`), so the app is same-origin (no CORS to
-configure) and works from any host or domain without rebuilding the image.
-The backend container itself is not published to the host.
+This starts five containers: Postgres, the backend (migrations run
+automatically on container start — see the caveat in `backend/Dockerfile`
+for multi-replica deployments), the frontend (built and served by an
+internal nginx), and **Caddy**, which is the only thing publicly exposed
+(ports 80/443).
 
-For a real (non-localhost) deployment, also set `FRONTEND_BASE_URL` in
-`.env` to the actual public URL people will use — it's baked into
-password-reset email links.
+**Deploying to a real server:**
+1. Point your domain's DNS A record at the server's IP.
+2. Set `DOMAIN=yourdomain.com` in `.env`.
+3. `docker compose up --build -d`.
+
+Caddy detects `DOMAIN` isn't `localhost`/an IP and automatically obtains
+and renews a real Let's Encrypt certificate over ports 80/443 — that's the
+entire TLS setup, nothing else to configure. It also routes `/api/*`
+straight to the backend and everything else to the frontend, so the whole
+app is same-origin (no CORS to configure) from one URL.
+
+**No domain yet / local-only use:** set `DOMAIN=localhost` (or the
+server's bare IP). Caddy issues a locally-trusted certificate instead of a
+public one — the app still runs over HTTPS, but browsers show a one-time
+untrusted-certificate warning since it isn't from a public CA.
+
+`FRONTEND_BASE_URL` (baked into password-reset email links) defaults to
+`https://$DOMAIN`; only set it explicitly if the frontend is reachable at
+a different URL than `DOMAIN` (e.g. a split-domain setup with the backend
+elsewhere). Neither the backend nor the frontend containers publish a port
+directly — Caddy is the sole ingress, everything else talks over the
+private compose network.
 
 ## Security notes
 
@@ -96,9 +112,17 @@ password-reset email links.
   its DB. CI runs CodeQL and Dependabot keeps dependencies current.
 - The backend trusts `X-Forwarded-*` headers from any peer
   (`--forwarded-allow-ips=*`) so the rate limiter keys on the real client
-  IP instead of nginx's — safe only because the backend container is never
-  published to the host, so nginx is the only thing that can reach it.
-  Don't publish the backend's port without reconsidering this.
+  IP instead of Caddy's — safe only because the backend container is never
+  published to the host, so Caddy is the only thing that can reach it
+  directly. Don't publish the backend's port without reconsidering this.
+  (Caddy's `reverse_proxy` already discards any `X-Forwarded-For` a client
+  sends it and substitutes the real connecting IP, so this doesn't reopen
+  a spoofing hole — verified by testing with a forged header. nginx's
+  equivalent default does *not* do this safely; see `frontend/nginx.conf`
+  if you ever reintroduce nginx as the public edge.)
+- TLS is handled entirely by Caddy — see the Docker section above. There's
+  no other TLS termination point, and the backend/frontend never see
+  unencrypted traffic from outside the compose network.
 
 ## CI
 
