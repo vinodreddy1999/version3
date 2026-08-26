@@ -3,7 +3,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.inventory import MovementType, StockBalance, StockMovement
 from app.models.user import User
@@ -26,10 +26,7 @@ router = APIRouter(prefix="/api/warehouse", tags=["warehouse"])
 
 
 def _get_owned_warehouse(db: Session, user: User, warehouse_id: str) -> Warehouse:
-    warehouse = db.get(Warehouse, warehouse_id)
-    if warehouse is None or warehouse.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found")
-    return warehouse
+    return get_owned(db, Warehouse, warehouse_id, user, "Warehouse")
 
 
 def _get_owned_zone(db: Session, user: User, zone_id: str) -> Zone:
@@ -84,8 +81,7 @@ def list_warehouses(
 @router.post("/zones", response_model=ZoneOut, status_code=status.HTTP_201_CREATED)
 def create_zone(payload: ZoneCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
     warehouse = _get_owned_warehouse(db, user, payload.warehouse_id)
-    existing = db.query(Zone).filter(Zone.warehouse_id == warehouse.id, Zone.code == payload.code).first()
-    if existing:
+    if db.query(Zone).filter(Zone.warehouse_id == warehouse.id, Zone.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Zone code already exists for this warehouse")
 
     zone = Zone(**payload.model_dump())
@@ -113,8 +109,7 @@ def list_zones(
 @router.post("/bins", response_model=BinOut, status_code=status.HTTP_201_CREATED)
 def create_bin(payload: BinCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
     zone = _get_owned_zone(db, user, payload.zone_id)
-    existing = db.query(Bin).filter(Bin.zone_id == zone.id, Bin.code == payload.code).first()
-    if existing:
+    if db.query(Bin).filter(Bin.zone_id == zone.id, Bin.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Bin code already exists in this zone")
 
     bin_ = Bin(**payload.model_dump())

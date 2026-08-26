@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.models.warehouse import TaskStatus, ZoneType
+from app.schemas.base import ORMModel
 
 
 class WarehouseCreate(BaseModel):
@@ -11,13 +12,11 @@ class WarehouseCreate(BaseModel):
     code: str = Field(min_length=1, max_length=50)
 
 
-class WarehouseOut(BaseModel):
+class WarehouseOut(ORMModel):
     id: str
     plant_id: str
     name: str
     code: str
-
-    model_config = {"from_attributes": True}
 
 
 class ZoneCreate(BaseModel):
@@ -27,14 +26,12 @@ class ZoneCreate(BaseModel):
     zone_type: ZoneType
 
 
-class ZoneOut(BaseModel):
+class ZoneOut(ORMModel):
     id: str
     warehouse_id: str
     name: str
     code: str
     zone_type: ZoneType
-
-    model_config = {"from_attributes": True}
 
 
 class BinCreate(BaseModel):
@@ -42,22 +39,18 @@ class BinCreate(BaseModel):
     code: str = Field(min_length=1, max_length=50)
 
 
-class BinOut(BaseModel):
+class BinOut(ORMModel):
     id: str
     zone_id: str
     code: str
 
-    model_config = {"from_attributes": True}
 
-
-class BinStockOut(BaseModel):
+class BinStockOut(ORMModel):
     bin_id: str
     bin_code: str
     item_id: str
     item_sku: str
     quantity: Decimal
-
-    model_config = {"from_attributes": True}
 
 
 class PutawayTaskCreate(BaseModel):
@@ -68,7 +61,7 @@ class PutawayTaskCreate(BaseModel):
     reference: str | None = Field(default=None, max_length=200)
 
 
-class PutawayTaskOut(BaseModel):
+class PutawayTaskOut(ORMModel):
     id: str
     plant_id: str
     item_id: str
@@ -76,8 +69,6 @@ class PutawayTaskOut(BaseModel):
     quantity: Decimal
     reference: str | None
     status: TaskStatus
-
-    model_config = {"from_attributes": True}
 
 
 class PickTaskCreate(BaseModel):
@@ -88,7 +79,7 @@ class PickTaskCreate(BaseModel):
     reference: str | None = Field(default=None, max_length=200)
 
 
-class PickTaskOut(BaseModel):
+class PickTaskOut(ORMModel):
     id: str
     plant_id: str
     item_id: str
@@ -96,5 +87,3 @@ class PickTaskOut(BaseModel):
     quantity: Decimal
     reference: str | None
     status: TaskStatus
-
-    model_config = {"from_attributes": True}

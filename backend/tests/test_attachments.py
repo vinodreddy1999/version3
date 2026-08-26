@@ -1,21 +1,12 @@
 import pytest
 
 from app.core.config import settings
+from conftest import register_tenant_headers
 
 
 @pytest.fixture()
 def setup(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    headers = {"Authorization": f"Bearer {register.json()['access_token']}"}
+    headers = register_tenant_headers(client)
 
     company_id = client.post(
         "/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers

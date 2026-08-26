@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.models.quality import Defect, DefectStatus, Inspection, InspectionResult
 from app.models.user import User
@@ -11,10 +11,7 @@ router = APIRouter(prefix="/api/quality", tags=["quality"])
 
 
 def _get_owned_inspection(db: Session, user: User, inspection_id: str) -> Inspection:
-    inspection = db.get(Inspection, inspection_id)
-    if inspection is None or inspection.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Inspection not found")
-    return inspection
+    return get_owned(db, Inspection, inspection_id, user, "Inspection")
 
 
 @router.post("/inspections", response_model=InspectionOut, status_code=status.HTTP_201_CREATED)

@@ -1,19 +1,4 @@
-import pytest
-
-
-@pytest.fixture()
-def admin_headers(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    return {"Authorization": f"Bearer {register.json()['access_token']}"}
+from conftest import other_tenant_headers
 
 
 def test_admin_role_gets_all_permissions_on_registration(client, admin_headers):
@@ -151,17 +136,7 @@ def test_non_admin_user_cannot_manage_users(client, admin_headers):
 
 
 def test_admin_endpoints_isolated_per_tenant(client, admin_headers):
-    other = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Globex",
-            "tenant_slug": "globex",
-            "admin_email": "admin@globex.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Gary Globex",
-        },
-    ).json()
-    other_headers = {"Authorization": f"Bearer {other['access_token']}"}
+    other_headers = other_tenant_headers(client)
 
     acme_users = client.get("/api/admin/users", headers=admin_headers).json()
     globex_users = client.get("/api/admin/users", headers=other_headers).json()

@@ -1,9 +1,9 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from app.schemas.base import ORMModel
 
 
-class AttachmentOut(BaseModel):
+class AttachmentOut(ORMModel):
     id: str
     entity_type: str
     entity_id: str
@@ -11,5 +11,3 @@ class AttachmentOut(BaseModel):
     content_type: str
     size_bytes: int
     created_at: datetime
-
-    model_config = {"from_attributes": True}

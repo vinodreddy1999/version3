@@ -1,19 +1,4 @@
-import pytest
-
-
-@pytest.fixture()
-def admin_headers(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    return {"Authorization": f"Bearer {register.json()['access_token']}"}
+from conftest import other_tenant_headers
 
 
 def test_registration_is_audited(client, admin_headers):
@@ -97,17 +82,7 @@ def test_audit_log_requires_permission(client, admin_headers):
 
 
 def test_audit_log_isolated_per_tenant(client, admin_headers):
-    other = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Globex",
-            "tenant_slug": "globex",
-            "admin_email": "admin@globex.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Gary Globex",
-        },
-    ).json()
-    other_headers = {"Authorization": f"Bearer {other['access_token']}"}
+    other_headers = other_tenant_headers(client)
 
     acme_log = client.get("/api/admin/audit-log", headers=admin_headers).json()
     globex_log = client.get("/api/admin/audit-log", headers=other_headers).json()

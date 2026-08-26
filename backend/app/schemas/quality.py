@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.models.quality import DefectSeverity, DefectStatus, InspectionResult
+from app.schemas.base import ORMModel
 
 
 class DefectCreate(BaseModel):
@@ -12,15 +13,13 @@ class DefectCreate(BaseModel):
     description: str | None = None
 
 
-class DefectOut(BaseModel):
+class DefectOut(ORMModel):
     id: str
     defect_type: str
     severity: DefectSeverity
     quantity: Decimal
     description: str | None
     status: DefectStatus
-
-    model_config = {"from_attributes": True}
 
 
 class InspectionCreate(BaseModel):
@@ -32,7 +31,7 @@ class InspectionCreate(BaseModel):
     defects: list[DefectCreate] = Field(default_factory=list)
 
 
-class InspectionOut(BaseModel):
+class InspectionOut(ORMModel):
     id: str
     plant_id: str
     item_id: str
@@ -41,5 +40,3 @@ class InspectionOut(BaseModel):
     result: InspectionResult
     notes: str | None
     defects: list[DefectOut]
-
-    model_config = {"from_attributes": True}

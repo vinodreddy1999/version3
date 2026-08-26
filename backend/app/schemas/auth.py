@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.base import ORMModel
+
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -17,15 +19,13 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class ImpersonatorOut(BaseModel):
+class ImpersonatorOut(ORMModel):
     id: str
     email: str
     full_name: str
 
-    model_config = {"from_attributes": True}
 
-
-class UserOut(BaseModel):
+class UserOut(ORMModel):
     id: str
     email: str
     full_name: str
@@ -34,8 +34,6 @@ class UserOut(BaseModel):
     roles: list[str]
     permissions: list[str]
     impersonated_by: ImpersonatorOut | None = None
-
-    model_config = {"from_attributes": True}
 
 
 class ImpersonateResponse(BaseModel):

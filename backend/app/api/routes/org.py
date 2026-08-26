@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.models.tenant import Company, Plant
 from app.models.user import User
 from app.schemas.org import CompanyCreate, CompanyOut, PlantCreate, PlantOut
@@ -15,8 +15,7 @@ def create_company(
     db: Session = Depends(get_db_session),
     user: User = Depends(get_current_user),
 ):
-    existing = db.query(Company).filter(Company.tenant_id == user.tenant_id, Company.code == payload.code).first()
-    if existing:
+    if db.query(Company).filter(Company.tenant_id == user.tenant_id, Company.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Company code already exists")
 
     company = Company(tenant_id=user.tenant_id, **payload.model_dump())
@@ -39,10 +38,7 @@ def list_companies(
 
 
 def _get_owned_company(db: Session, user: User, company_id: str) -> Company:
-    company = db.get(Company, company_id)
-    if company is None or company.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
-    return company
+    return get_owned(db, Company, company_id, user, "Company")
 
 
 @router.post("/plants", response_model=PlantOut, status_code=status.HTTP_201_CREATED)
@@ -52,8 +48,7 @@ def create_plant(
     user: User = Depends(get_current_user),
 ):
     company = _get_owned_company(db, user, payload.company_id)
-    existing = db.query(Plant).filter(Plant.company_id == company.id, Plant.code == payload.code).first()
-    if existing:
+    if db.query(Plant).filter(Plant.company_id == company.id, Plant.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Plant code already exists for this company")
 
     plant = Plant(**payload.model_dump())

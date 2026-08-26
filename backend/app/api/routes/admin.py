@@ -1,9 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
-from sqlalchemy.orm import joinedload
-
-from app.api.deps import PaginationParams, get_current_user, get_db_session, require_permissions
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned, require_permissions
 from app.core.audit import record_audit
 from app.core.permissions import PERMISSION_CODES
 from app.core.security import create_access_token, hash_password
@@ -105,8 +103,7 @@ def create_role(
     db: Session = Depends(get_db_session),
     user: User = Depends(require_permissions("admin:manage_roles")),
 ):
-    existing = db.query(Role).filter(Role.tenant_id == user.tenant_id, Role.name == payload.name).first()
-    if existing:
+    if db.query(Role).filter(Role.tenant_id == user.tenant_id, Role.name == payload.name).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A role with this name already exists")
 
     role = Role(tenant_id=user.tenant_id, name=payload.name)
@@ -128,10 +125,7 @@ def create_role(
 
 
 def _get_owned_role(db: Session, user: User, role_id: str) -> Role:
-    role = db.get(Role, role_id)
-    if role is None or role.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found")
-    return role
+    return get_owned(db, Role, role_id, user, "Role")
 
 
 @router.patch("/roles/{role_id}", response_model=RoleOut)
@@ -202,8 +196,7 @@ def create_user(
     db: Session = Depends(get_db_session),
     user: User = Depends(require_permissions("admin:manage_users")),
 ):
-    existing = db.query(User).filter(User.tenant_id == user.tenant_id, User.email == payload.email).first()
-    if existing:
+    if db.query(User).filter(User.tenant_id == user.tenant_id, User.email == payload.email).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A user with this email already exists")
 
     new_user = User(
@@ -234,10 +227,7 @@ def create_user(
 
 
 def _get_owned_target_user(db: Session, user: User, target_id: str) -> User:
-    target = db.get(User, target_id)
-    if target is None or target.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
-    return target
+    return get_owned(db, User, target_id, user, "User")
 
 
 @router.patch("/users/{user_id}", response_model=UserAdminOut)

@@ -2,12 +2,12 @@ from datetime import datetime
 
 from pydantic import BaseModel, EmailStr, Field
 
+from app.schemas.base import ORMModel
 
-class PermissionOut(BaseModel):
+
+class PermissionOut(ORMModel):
     code: str
     description: str | None
-
-    model_config = {"from_attributes": True}
 
 
 class RoleCreate(BaseModel):
@@ -20,13 +20,11 @@ class RoleUpdate(BaseModel):
     permission_codes: list[str] | None = None
 
 
-class RoleOut(BaseModel):
+class RoleOut(ORMModel):
     id: str
     name: str
     is_system: bool
     permission_codes: list[str]
-
-    model_config = {"from_attributes": True}
 
 
 class UserCreate(BaseModel):
@@ -44,7 +42,7 @@ class UserUpdate(BaseModel):
     role_ids: list[str] | None = None
 
 
-class UserAdminOut(BaseModel):
+class UserAdminOut(ORMModel):
     id: str
     email: str
     full_name: str
@@ -53,10 +51,8 @@ class UserAdminOut(BaseModel):
     role_ids: list[str]
     role_names: list[str]
 
-    model_config = {"from_attributes": True}
 
-
-class AuditLogOut(BaseModel):
+class AuditLogOut(ORMModel):
     id: str
     action: str
     entity_type: str
@@ -64,5 +60,3 @@ class AuditLogOut(BaseModel):
     summary: str
     actor_email: str | None
     created_at: datetime
-
-    model_config = {"from_attributes": True}

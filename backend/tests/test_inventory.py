@@ -1,20 +1,11 @@
 import pytest
 
+from conftest import other_tenant_headers, register_tenant_headers
+
 
 @pytest.fixture()
 def auth_headers_and_plant(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    token = register.json()["access_token"]
-    headers = {"Authorization": f"Bearer {token}"}
+    headers = register_tenant_headers(client)
 
     company = client.post("/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers)
     company_id = company.json()["id"]
@@ -113,17 +104,7 @@ def test_item_from_other_tenant_is_not_visible(client, auth_headers_and_plant):
     headers, plant_id = auth_headers_and_plant
     item_id = _create_item(client, headers).json()["id"]
 
-    other_register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Globex",
-            "tenant_slug": "globex",
-            "admin_email": "admin@globex.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Gary Globex",
-        },
-    )
-    other_headers = {"Authorization": f"Bearer {other_register.json()['access_token']}"}
+    other_headers = other_tenant_headers(client)
 
     response = client.get(f"/api/inventory/items/{item_id}", headers=other_headers)
     assert response.status_code == 404

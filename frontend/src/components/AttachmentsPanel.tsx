@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, Paperclip } from 'lucide-react'
 import { attachmentsApi } from '../api/endpoints'
 import type { AttachmentEntityType } from '../api/types'
+import { errorMessage } from '../lib/apiClient'
 import { Button } from './ui'
 
 export function AttachmentsPanel({ entityType, entityId }: { entityType: AttachmentEntityType; entityId: string }) {
@@ -22,10 +23,7 @@ export function AttachmentsPanel({ entityType, entityId }: { entityType: Attachm
       queryClient.invalidateQueries({ queryKey })
       setError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(message ?? 'Could not upload file.')
-    },
+    onError: (err: unknown) => setError(errorMessage(err, 'Could not upload file.')),
   })
 
   return (

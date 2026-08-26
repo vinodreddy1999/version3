@@ -46,6 +46,12 @@ export const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://127.0.0.1:8000',
 })
 
+// Pulls the backend's { detail: "..." } message out of a failed request,
+// falling back to a friendlier page-specific message when there isn't one.
+export function errorMessage(err: unknown, fallback: string): string {
+  return (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? fallback
+}
+
 // Backend list endpoints return the raw array with the total count on the
 // X-Total-Count header rather than a wrapper object, so this pairs the two
 // back up into a shape the frontend can page through.

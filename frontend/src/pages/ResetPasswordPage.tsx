@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { KeyRound } from 'lucide-react'
 import { authApi } from '../api/endpoints'
 import { Alert, Button, Field, Input } from '../components/ui'
+import { errorMessage } from '../lib/apiClient'
 
 export function ResetPasswordPage() {
   const [searchParams] = useSearchParams()
@@ -28,10 +29,7 @@ export function ResetPasswordPage() {
       await authApi.resetPassword({ token, new_password: newPassword })
       setIsDone(true)
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        'This reset link is invalid or has expired.'
-      setError(message)
+      setError(errorMessage(err, 'This reset link is invalid or has expired.'))
     } finally {
       setIsSubmitting(false)
     }

@@ -33,3 +33,43 @@ def client(tmp_path):
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+
+
+def register_tenant_headers(client, slug: str = "acme") -> dict[str, str]:
+    """Registers a fresh tenant + admin user, returning Bearer auth headers."""
+    response = client.post(
+        "/api/auth/register-tenant",
+        json={
+            "tenant_name": "Acme Manufacturing",
+            "tenant_slug": slug,
+            "admin_email": "admin@acme.example.com",
+            "admin_password": "SuperSecret123!",
+            "admin_full_name": "Ada Admin",
+        },
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+@pytest.fixture()
+def admin_headers(client):
+    return register_tenant_headers(client)
+
+
+@pytest.fixture()
+def headers(client):
+    return register_tenant_headers(client)
+
+
+def other_tenant_headers(client) -> dict[str, str]:
+    """Registers a second ('Globex') tenant + admin, for cross-tenant isolation tests."""
+    response = client.post(
+        "/api/auth/register-tenant",
+        json={
+            "tenant_name": "Globex",
+            "tenant_slug": "globex",
+            "admin_email": "admin@globex.example.com",
+            "admin_password": "SuperSecret123!",
+            "admin_full_name": "Gary Globex",
+        },
+    )
+    return {"Authorization": f"Bearer {response.json()['access_token']}"}

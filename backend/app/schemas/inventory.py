@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.models.inventory import ItemType, MovementType
+from app.schemas.base import ORMModel
 
 
 class ItemCreate(BaseModel):
@@ -22,7 +23,7 @@ class ItemUpdate(BaseModel):
     is_active: bool | None = None
 
 
-class ItemOut(BaseModel):
+class ItemOut(ORMModel):
     id: str
     sku: str
     name: str
@@ -32,10 +33,8 @@ class ItemOut(BaseModel):
     reorder_point: Decimal
     is_active: bool
 
-    model_config = {"from_attributes": True}
 
-
-class StockBalanceOut(BaseModel):
+class StockBalanceOut(ORMModel):
     id: str
     plant_id: str
     item_id: str
@@ -44,8 +43,6 @@ class StockBalanceOut(BaseModel):
     quantity_on_hand: Decimal
     quantity_reserved: Decimal
     quantity_available: Decimal
-
-    model_config = {"from_attributes": True}
 
 
 class StockMovementCreate(BaseModel):
@@ -59,7 +56,7 @@ class StockMovementCreate(BaseModel):
     notes: str | None = None
 
 
-class StockMovementOut(BaseModel):
+class StockMovementOut(ORMModel):
     id: str
     plant_id: str
     item_id: str
@@ -68,5 +65,3 @@ class StockMovementOut(BaseModel):
     reference: str | None
     notes: str | None
     created_by_user_id: str
-
-    model_config = {"from_attributes": True}

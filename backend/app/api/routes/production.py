@@ -3,7 +3,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.core.csv_export import csv_response
 from app.models.inventory import Item, MovementType, StockBalance, StockMovement
@@ -33,10 +33,7 @@ def create_work_center(
     payload: WorkCenterCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
 ):
     _get_owned_plant(db, user, payload.plant_id)
-    existing = (
-        db.query(WorkCenter).filter(WorkCenter.plant_id == payload.plant_id, WorkCenter.code == payload.code).first()
-    )
-    if existing:
+    if db.query(WorkCenter).filter(WorkCenter.plant_id == payload.plant_id, WorkCenter.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Work center code already exists")
 
     work_center = WorkCenter(tenant_id=user.tenant_id, **payload.model_dump())
@@ -90,7 +87,7 @@ def create_bom(payload: BOMCreate, db: Session = Depends(get_db_session), user: 
                 status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="A component cannot be the BOM's own output item"
             )
 
-    existing = (
+    if (
         db.query(BillOfMaterial)
         .filter(
             BillOfMaterial.tenant_id == user.tenant_id,
@@ -98,8 +95,7 @@ def create_bom(payload: BOMCreate, db: Session = Depends(get_db_session), user: 
             BillOfMaterial.version == payload.version,
         )
         .first()
-    )
-    if existing:
+    ):
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A BOM with this output item and version already exists")
 
     bom = BillOfMaterial(
@@ -138,10 +134,7 @@ def list_boms(
 
 
 def _get_owned_bom(db: Session, user: User, bom_id: str) -> BillOfMaterial:
-    bom = db.get(BillOfMaterial, bom_id)
-    if bom is None or bom.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="BOM not found")
-    return bom
+    return get_owned(db, BillOfMaterial, bom_id, user, "BOM")
 
 
 @router.post("/orders", response_model=ProductionOrderOut, status_code=status.HTTP_201_CREATED)

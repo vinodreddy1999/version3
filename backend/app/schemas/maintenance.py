@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 
 from app.models.maintenance import AssetStatus, WorkOrderPriority, WorkOrderStatus, WorkOrderType
+from app.schemas.base import ORMModel
 
 
 class AssetCreate(BaseModel):
@@ -9,15 +10,13 @@ class AssetCreate(BaseModel):
     code: str = Field(min_length=1, max_length=50)
 
 
-class AssetOut(BaseModel):
+class AssetOut(ORMModel):
     id: str
     plant_id: str
     name: str
     code: str
     status: AssetStatus
     is_active: bool
-
-    model_config = {"from_attributes": True}
 
 
 class WorkOrderCreate(BaseModel):
@@ -28,7 +27,7 @@ class WorkOrderCreate(BaseModel):
     description: str | None = None
 
 
-class WorkOrderOut(BaseModel):
+class WorkOrderOut(ORMModel):
     id: str
     plant_id: str
     asset_id: str
@@ -36,5 +35,3 @@ class WorkOrderOut(BaseModel):
     priority: WorkOrderPriority
     status: WorkOrderStatus
     description: str | None
-
-    model_config = {"from_attributes": True}

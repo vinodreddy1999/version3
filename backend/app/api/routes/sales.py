@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.core.csv_export import csv_response
 from app.models.inventory import MovementType, StockBalance, StockMovement
@@ -16,8 +16,7 @@ router = APIRouter(prefix="/api/sales", tags=["sales"])
 def create_customer(
     payload: CustomerCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
 ):
-    existing = db.query(Customer).filter(Customer.tenant_id == user.tenant_id, Customer.code == payload.code).first()
-    if existing:
+    if db.query(Customer).filter(Customer.tenant_id == user.tenant_id, Customer.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Customer code already exists")
 
     customer = Customer(tenant_id=user.tenant_id, **payload.model_dump())
@@ -40,10 +39,7 @@ def list_customers(
 
 
 def _get_owned_customer(db: Session, user: User, customer_id: str) -> Customer:
-    customer = db.get(Customer, customer_id)
-    if customer is None or customer.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Customer not found")
-    return customer
+    return get_owned(db, Customer, customer_id, user, "Customer")
 
 
 def _get_owned_so(db: Session, user: User, order_id: str) -> SalesOrder:

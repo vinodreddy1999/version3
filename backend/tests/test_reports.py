@@ -1,19 +1,11 @@
 import pytest
 
+from conftest import other_tenant_headers, register_tenant_headers
+
 
 @pytest.fixture()
 def busy_tenant(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    headers = {"Authorization": f"Bearer {register.json()['access_token']}"}
+    headers = register_tenant_headers(client)
 
     company_id = client.post(
         "/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers
@@ -105,17 +97,7 @@ def test_dashboard_reflects_real_data(client, busy_tenant):
 
 
 def test_dashboard_isolated_per_tenant(client, busy_tenant):
-    other_register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Globex",
-            "tenant_slug": "globex",
-            "admin_email": "admin@globex.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Gary Globex",
-        },
-    )
-    other_headers = {"Authorization": f"Bearer {other_register.json()['access_token']}"}
+    other_headers = other_tenant_headers(client)
 
     response = client.get("/api/reports/dashboard", headers=other_headers)
     assert response.status_code == 200

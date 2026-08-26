@@ -1,21 +1,3 @@
-import pytest
-
-
-@pytest.fixture()
-def headers(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    return {"Authorization": f"Bearer {register.json()['access_token']}"}
-
-
 def test_items_list_respects_limit_and_offset(client, headers):
     for i in range(5):
         client.post(

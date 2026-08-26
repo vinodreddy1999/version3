@@ -4,6 +4,7 @@ import { ArrowLeftRight, Boxes, Package } from 'lucide-react'
 import { inventoryApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
+import { errorMessage } from '../lib/apiClient'
 import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
 const MOVEMENTS_PAGE_SIZE = 20
@@ -45,10 +46,7 @@ export function InventoryPage() {
       setMovementForm({ item_id: '', movement_type: 'receipt', quantity: '' })
       setFormError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setFormError(message ?? 'Could not record movement.')
-    },
+    onError: (err: unknown) => setFormError(errorMessage(err, 'Could not record movement.')),
   })
 
   return (

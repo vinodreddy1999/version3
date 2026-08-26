@@ -1,19 +1,6 @@
 import pytest
 
-
-@pytest.fixture()
-def admin_headers(client):
-    register = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Acme Manufacturing",
-            "tenant_slug": "acme",
-            "admin_email": "admin@acme.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Ada Admin",
-        },
-    )
-    return {"Authorization": f"Bearer {register.json()['access_token']}"}
+from conftest import other_tenant_headers
 
 
 @pytest.fixture()
@@ -94,17 +81,7 @@ def test_cannot_impersonate_inactive_user(client, admin_headers, clerk):
 
 
 def test_cannot_impersonate_user_in_another_tenant(client, admin_headers, clerk):
-    other = client.post(
-        "/api/auth/register-tenant",
-        json={
-            "tenant_name": "Globex",
-            "tenant_slug": "globex",
-            "admin_email": "admin@globex.example.com",
-            "admin_password": "SuperSecret123!",
-            "admin_full_name": "Gary Globex",
-        },
-    ).json()
-    other_headers = {"Authorization": f"Bearer {other['access_token']}"}
+    other_headers = other_tenant_headers(client)
 
     response = client.post(f"/api/admin/users/{clerk['id']}/impersonate", headers=other_headers)
     assert response.status_code == 404

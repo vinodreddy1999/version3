@@ -3,7 +3,7 @@ from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.core.csv_export import csv_response
 from app.models.inventory import Item, MovementType, StockBalance, StockMovement
 from app.models.tenant import Plant
@@ -24,10 +24,7 @@ _POSITIVE_MOVEMENTS = {MovementType.receipt, MovementType.transfer_in}
 
 
 def _get_owned_item(db: Session, user: User, item_id: str) -> Item:
-    item = db.get(Item, item_id)
-    if item is None or item.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Item not found")
-    return item
+    return get_owned(db, Item, item_id, user, "Item")
 
 
 def _get_owned_plant(db: Session, user: User, plant_id: str) -> Plant:
@@ -39,8 +36,7 @@ def _get_owned_plant(db: Session, user: User, plant_id: str) -> Plant:
 
 @router.post("/items", response_model=ItemOut, status_code=status.HTTP_201_CREATED)
 def create_item(payload: ItemCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
-    existing = db.query(Item).filter(Item.tenant_id == user.tenant_id, Item.sku == payload.sku).first()
-    if existing:
+    if db.query(Item).filter(Item.tenant_id == user.tenant_id, Item.sku == payload.sku).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="SKU already exists")
 
     item = Item(tenant_id=user.tenant_id, **payload.model_dump())

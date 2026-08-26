@@ -4,6 +4,7 @@ import { Factory } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import { authApi } from '../api/endpoints'
 import { Alert, Button, Field, Input } from '../components/ui'
+import { errorMessage } from '../lib/apiClient'
 
 export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login')
@@ -51,10 +52,7 @@ export function LoginPage() {
       await registerTenant(registerForm)
       navigate('/')
     } catch (err: unknown) {
-      const message =
-        (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
-        'Could not create your organization.'
-      setError(message)
+      setError(errorMessage(err, 'Could not create your organization.'))
     } finally {
       setIsSubmitting(false)
     }

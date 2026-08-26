@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from typing import TypeVar
 
 from fastapi import Depends, HTTPException, Query, status
 from fastapi.security import OAuth2PasswordBearer
@@ -9,6 +10,8 @@ from app.core.security import decode_token
 from app.models.user import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
+
+T = TypeVar("T")
 
 
 class PaginationParams:
@@ -54,6 +57,17 @@ def get_current_user(
     # /api/auth/me) without a second dependency every route would need.
     user.impersonated_by_id = payload.get("impersonated_by")
     return user
+
+
+def get_owned(db: Session, model: type[T], entity_id: str, user: User, label: str) -> T:
+    """Fetch a row by id and 404 unless it belongs to the caller's tenant.
+    Only for models with a direct `tenant_id` column — ones scoped via a
+    relationship (e.g. Plant -> Company, Bin -> Zone -> Warehouse) or that
+    need eager-loaded relations keep their own `_get_owned_*` helper."""
+    obj = db.get(model, entity_id)
+    if obj is None or obj.tenant_id != user.tenant_id:  # type: ignore[attr-defined]
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"{label} not found")
+    return obj
 
 
 def require_permissions(*required_codes: str):

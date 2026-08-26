@@ -3,6 +3,7 @@ from decimal import Decimal
 from pydantic import BaseModel, Field
 
 from app.models.production import ProductionOrderStatus
+from app.schemas.base import ORMModel
 
 
 class WorkCenterCreate(BaseModel):
@@ -12,14 +13,12 @@ class WorkCenterCreate(BaseModel):
     capacity_per_hour: Decimal | None = None
 
 
-class WorkCenterOut(BaseModel):
+class WorkCenterOut(ORMModel):
     id: str
     plant_id: str
     name: str
     code: str
     capacity_per_hour: Decimal | None
-
-    model_config = {"from_attributes": True}
 
 
 class BOMComponentCreate(BaseModel):
@@ -28,12 +27,10 @@ class BOMComponentCreate(BaseModel):
     quantity_per_unit: Decimal = Field(gt=0)
 
 
-class BOMComponentOut(BaseModel):
+class BOMComponentOut(ORMModel):
     component_item_id: str
     component_sku: str
     quantity_per_unit: Decimal
-
-    model_config = {"from_attributes": True}
 
 
 class BOMCreate(BaseModel):
@@ -43,15 +40,13 @@ class BOMCreate(BaseModel):
     components: list[BOMComponentCreate] = Field(min_length=1)
 
 
-class BOMOut(BaseModel):
+class BOMOut(ORMModel):
     id: str
     output_item_id: str
     name: str
     version: str
     is_active: bool
     components: list[BOMComponentOut]
-
-    model_config = {"from_attributes": True}
 
 
 class ProductionOrderCreate(BaseModel):
@@ -66,7 +61,7 @@ class ProductionOrderCompleteRequest(BaseModel):
     quantity: Decimal = Field(gt=0)
 
 
-class ProductionOrderOut(BaseModel):
+class ProductionOrderOut(ORMModel):
     id: str
     plant_id: str
     bom_id: str
@@ -75,5 +70,3 @@ class ProductionOrderOut(BaseModel):
     quantity_completed: Decimal
     status: ProductionOrderStatus
     reference: str | None
-
-    model_config = {"from_attributes": True}

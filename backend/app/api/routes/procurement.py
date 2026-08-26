@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session, joinedload
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_item, _get_owned_plant
 from app.core.csv_export import csv_response
 from app.models.inventory import MovementType, StockBalance, StockMovement
@@ -22,8 +22,7 @@ router = APIRouter(prefix="/api/procurement", tags=["procurement"])
 def create_supplier(
     payload: SupplierCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)
 ):
-    existing = db.query(Supplier).filter(Supplier.tenant_id == user.tenant_id, Supplier.code == payload.code).first()
-    if existing:
+    if db.query(Supplier).filter(Supplier.tenant_id == user.tenant_id, Supplier.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Supplier code already exists")
 
     supplier = Supplier(tenant_id=user.tenant_id, **payload.model_dump())
@@ -46,10 +45,7 @@ def list_suppliers(
 
 
 def _get_owned_supplier(db: Session, user: User, supplier_id: str) -> Supplier:
-    supplier = db.get(Supplier, supplier_id)
-    if supplier is None or supplier.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Supplier not found")
-    return supplier
+    return get_owned(db, Supplier, supplier_id, user, "Supplier")
 
 
 def _get_owned_po(db: Session, user: User, order_id: str) -> PurchaseOrder:

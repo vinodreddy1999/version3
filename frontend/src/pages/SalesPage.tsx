@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, salesApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
+import { errorMessage } from '../lib/apiClient'
 import { ShoppingCart, Users } from 'lucide-react'
 import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
@@ -60,10 +61,7 @@ export function SalesPage() {
       invalidate()
       setShipError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setShipError(message ?? 'Could not ship — check available stock.')
-    },
+    onError: (err: unknown) => setShipError(errorMessage(err, 'Could not ship — check available stock.')),
   })
 
   const statusTone = {

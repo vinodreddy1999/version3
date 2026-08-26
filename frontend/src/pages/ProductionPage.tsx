@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { inventoryApi, productionApi } from '../api/endpoints'
 import { usePlant } from '../contexts/PlantContext'
 import { usePagingOffset } from '../lib/usePagingOffset'
+import { errorMessage } from '../lib/apiClient'
 import { ClipboardList, Factory } from 'lucide-react'
 import { Alert, Badge, Button, Card, EmptyState, ExportButton, Field, Input, PageHeader, Pager, Select, Table } from '../components/ui'
 
@@ -42,10 +43,7 @@ export function ProductionPage() {
       setBomForm({ output_item_id: '', name: '', components: [{ component_item_id: '', quantity_per_unit: '' }] })
       setBomError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setBomError(message ?? 'Could not create BOM.')
-    },
+    onError: (err: unknown) => setBomError(errorMessage(err, 'Could not create BOM.')),
   })
 
   const createOrder = useMutation({

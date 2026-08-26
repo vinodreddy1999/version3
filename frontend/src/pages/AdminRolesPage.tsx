@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { adminApi } from '../api/endpoints'
 import type { Role } from '../api/types'
+import { errorMessage } from '../lib/apiClient'
 import { Alert, Badge, Button, Card, Checkbox, EmptyState, Field, Input, Modal, PageHeader } from '../components/ui'
 
 function groupPermissions(codes: string[]) {
@@ -39,10 +40,7 @@ export function AdminRolesPage() {
       setCreateForm(emptyForm)
       setCreateError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setCreateError(message ?? 'Could not create role.')
-    },
+    onError: (err: unknown) => setCreateError(errorMessage(err, 'Could not create role.')),
   })
 
   const updateRole = useMutation({

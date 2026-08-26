@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
-from app.api.deps import PaginationParams, get_current_user, get_db_session
+from app.api.deps import PaginationParams, get_current_user, get_db_session, get_owned
 from app.api.routes.inventory import _get_owned_plant
 from app.models.maintenance import Asset, AssetStatus, MaintenanceWorkOrder, WorkOrderStatus
 from app.models.user import User
@@ -13,8 +13,7 @@ router = APIRouter(prefix="/api/maintenance", tags=["maintenance"])
 @router.post("/assets", response_model=AssetOut, status_code=status.HTTP_201_CREATED)
 def create_asset(payload: AssetCreate, db: Session = Depends(get_db_session), user: User = Depends(get_current_user)):
     _get_owned_plant(db, user, payload.plant_id)
-    existing = db.query(Asset).filter(Asset.plant_id == payload.plant_id, Asset.code == payload.code).first()
-    if existing:
+    if db.query(Asset).filter(Asset.plant_id == payload.plant_id, Asset.code == payload.code).first():
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Asset code already exists for this plant")
 
     asset = Asset(tenant_id=user.tenant_id, **payload.model_dump())
@@ -40,17 +39,11 @@ def list_assets(
 
 
 def _get_owned_asset(db: Session, user: User, asset_id: str) -> Asset:
-    asset = db.get(Asset, asset_id)
-    if asset is None or asset.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
-    return asset
+    return get_owned(db, Asset, asset_id, user, "Asset")
 
 
 def _get_owned_work_order(db: Session, user: User, work_order_id: str) -> MaintenanceWorkOrder:
-    order = db.get(MaintenanceWorkOrder, work_order_id)
-    if order is None or order.tenant_id != user.tenant_id:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Work order not found")
-    return order
+    return get_owned(db, MaintenanceWorkOrder, work_order_id, user, "Work order")
 
 
 @router.post("/work-orders", response_model=WorkOrderOut, status_code=status.HTTP_201_CREATED)

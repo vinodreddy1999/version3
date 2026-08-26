@@ -5,6 +5,7 @@ import { UserCog, UserPlus } from 'lucide-react'
 import { adminApi } from '../api/endpoints'
 import { useAuth } from '../contexts/AuthContext'
 import type { AdminUser } from '../api/types'
+import { errorMessage } from '../lib/apiClient'
 import { Alert, Badge, Button, Card, Checkbox, EmptyState, Field, Input, Modal, PageHeader, Pager, Table } from '../components/ui'
 
 const emptyInviteForm = { email: '', full_name: '', password: '', role_ids: [] as string[], is_superuser: false }
@@ -42,10 +43,7 @@ export function AdminUsersPage() {
       setInviteForm(emptyInviteForm)
       setInviteError(null)
     },
-    onError: (err: unknown) => {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setInviteError(message ?? 'Could not create user.')
-    },
+    onError: (err: unknown) => setInviteError(errorMessage(err, 'Could not create user.')),
   })
 
   const updateUser = useMutation({
@@ -78,8 +76,7 @@ export function AdminUsersPage() {
       setEditingUser(null)
       navigate('/')
     } catch (err: unknown) {
-      const message = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setImpersonateError(message ?? 'Could not start impersonating this user.')
+      setImpersonateError(errorMessage(err, 'Could not start impersonating this user.'))
     } finally {
       setIsImpersonating(false)
     }
