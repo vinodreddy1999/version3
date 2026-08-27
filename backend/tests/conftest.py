@@ -73,3 +73,36 @@ def other_tenant_headers(client) -> dict[str, str]:
         },
     )
     return {"Authorization": f"Bearer {response.json()['access_token']}"}
+
+
+def create_plant(client, headers: dict[str, str]) -> str:
+    """Creates a company + plant ('Acme East' / 'Plant 1'), returning the plant id."""
+    company_id = client.post(
+        "/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers
+    ).json()["id"]
+    return client.post(
+        "/api/org/plants", json={"company_id": company_id, "name": "Plant 1", "code": "P1"}, headers=headers
+    ).json()["id"]
+
+
+def create_item(client, headers: dict[str, str]) -> str:
+    """Creates a raw material item ('RM-001' / 'Steel Coil'), returning its id."""
+    return client.post(
+        "/api/inventory/items",
+        json={"sku": "RM-001", "name": "Steel Coil", "item_type": "raw_material", "uom": "KG"},
+        headers=headers,
+    ).json()["id"]
+
+
+def create_supplier(client, headers: dict[str, str]) -> str:
+    """Creates a supplier ('SteelCo' / 'SUP-1'), returning its id."""
+    return client.post(
+        "/api/procurement/suppliers", json={"name": "SteelCo", "code": "SUP-1"}, headers=headers
+    ).json()["id"]
+
+
+def create_customer(client, headers: dict[str, str]) -> str:
+    """Creates a customer ('Bracket Buyers' / 'CUST-1'), returning its id."""
+    return client.post(
+        "/api/sales/customers", json={"name": "Bracket Buyers", "code": "CUST-1"}, headers=headers
+    ).json()["id"]

@@ -1,18 +1,12 @@
 import pytest
 
-from conftest import register_tenant_headers
+from conftest import create_plant, register_tenant_headers
 
 
 @pytest.fixture()
 def setup(client):
     headers = register_tenant_headers(client)
-
-    company_id = client.post(
-        "/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers
-    ).json()["id"]
-    plant_id = client.post(
-        "/api/org/plants", json={"company_id": company_id, "name": "Plant 1", "code": "P1"}, headers=headers
-    ).json()["id"]
+    plant_id = create_plant(client, headers)
     item_id = client.post(
         "/api/inventory/items",
         json={"sku": "FG-BRACKET", "name": "Steel Bracket", "item_type": "finished_good", "uom": "EA"},

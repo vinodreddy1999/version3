@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { randomSlug, registerTenant } from './helpers.js'
+import { inviteUser, randomSlug, registerTenant } from './helpers.js'
 
 test('super admin can impersonate a user and return to their own account', async ({ page }) => {
   const consoleErrors: string[] = []
@@ -13,16 +13,7 @@ test('super admin can impersonate a user and return to their own account', async
   const clerkEmail = `clerk-${randomSlug()}@example.com`
   const clerkPassword = 'AnotherSecret123!'
 
-  await page.click('nav >> text=Users')
-  await page.waitForSelector('text=Invite user')
-  await page.click('button:has-text("Invite user")')
-  await page.waitForSelector('text=Temporary password')
-  const inviteForm = page.locator('form').filter({ hasText: 'Create user' })
-  await inviteForm.locator('input').nth(0).fill('Carla Clerk')
-  await inviteForm.locator('input').nth(1).fill(clerkEmail)
-  await inviteForm.locator('input').nth(2).fill(clerkPassword)
-  await page.click('button:has-text("Create user")')
-  await page.waitForSelector('text=Carla Clerk')
+  await inviteUser(page, 'Carla Clerk', clerkEmail, clerkPassword)
 
   const clerkRow = page.locator('tr', { hasText: 'Carla Clerk' })
   await clerkRow.locator('button:has-text("Edit")').click()
@@ -51,16 +42,7 @@ test('non-superuser cannot see an impersonate option', async ({ page }) => {
   const clerkEmail = `clerk-${randomSlug()}@example.com`
   const clerkPassword = 'AnotherSecret123!'
 
-  await page.click('nav >> text=Users')
-  await page.waitForSelector('text=Invite user')
-  await page.click('button:has-text("Invite user")')
-  await page.waitForSelector('text=Temporary password')
-  const inviteForm = page.locator('form').filter({ hasText: 'Create user' })
-  await inviteForm.locator('input').nth(0).fill('Carla Clerk')
-  await inviteForm.locator('input').nth(1).fill(clerkEmail)
-  await inviteForm.locator('input').nth(2).fill(clerkPassword)
-  await page.click('button:has-text("Create user")')
-  await page.waitForSelector('text=Carla Clerk')
+  await inviteUser(page, 'Carla Clerk', clerkEmail, clerkPassword)
 
   // Grant the clerk admin:manage_users directly via a role so they can
   // reach the Users page, then confirm they still don't see Impersonate —

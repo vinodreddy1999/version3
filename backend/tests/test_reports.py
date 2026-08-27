@@ -1,18 +1,12 @@
 import pytest
 
-from conftest import other_tenant_headers, register_tenant_headers
+from conftest import create_plant, create_supplier, other_tenant_headers, register_tenant_headers
 
 
 @pytest.fixture()
 def busy_tenant(client):
     headers = register_tenant_headers(client)
-
-    company_id = client.post(
-        "/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers
-    ).json()["id"]
-    plant_id = client.post(
-        "/api/org/plants", json={"company_id": company_id, "name": "Plant 1", "code": "P1"}, headers=headers
-    ).json()["id"]
+    plant_id = create_plant(client, headers)
 
     steel_id = client.post(
         "/api/inventory/items",
@@ -31,9 +25,7 @@ def busy_tenant(client):
         headers=headers,
     )
 
-    supplier_id = client.post(
-        "/api/procurement/suppliers", json={"name": "SteelCo", "code": "SUP-1"}, headers=headers
-    ).json()["id"]
+    supplier_id = create_supplier(client, headers)
     po = client.post(
         "/api/procurement/orders",
         json={

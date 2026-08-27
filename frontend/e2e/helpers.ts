@@ -51,3 +51,24 @@ export async function setUpCompanyAndPlant(page: Page): Promise<void> {
 
   await page.selectOption('header select', { label: 'Plant 1' })
 }
+
+/** Invites a user via the Users page's "Invite user" modal, optionally assigning one role. */
+export async function inviteUser(
+  page: Page,
+  fullName: string,
+  email: string,
+  password: string,
+  roleLabel?: string,
+): Promise<void> {
+  await page.click('nav >> text=Users')
+  await page.waitForSelector('text=Invite user')
+  await page.click('button:has-text("Invite user")')
+  await page.waitForSelector('text=Temporary password')
+  const inviteForm = page.locator('form').filter({ hasText: 'Create user' })
+  await inviteForm.locator('input').nth(0).fill(fullName)
+  await inviteForm.locator('input').nth(1).fill(email)
+  await inviteForm.locator('input').nth(2).fill(password)
+  if (roleLabel) await page.click(`label:has-text("${roleLabel}")`)
+  await page.click('button:has-text("Create user")')
+  await page.waitForSelector(`text=${fullName}`)
+}

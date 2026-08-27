@@ -1,23 +1,12 @@
 import pytest
 
-from conftest import other_tenant_headers, register_tenant_headers
+from conftest import create_plant, other_tenant_headers, register_tenant_headers
 
 
 @pytest.fixture()
 def auth_headers_and_plant(client):
     headers = register_tenant_headers(client)
-
-    company = client.post("/api/org/companies", json={"name": "Acme East", "code": "ACME-E"}, headers=headers)
-    company_id = company.json()["id"]
-
-    plant = client.post(
-        "/api/org/plants",
-        json={"company_id": company_id, "name": "Plant 1", "code": "P1"},
-        headers=headers,
-    )
-    plant_id = plant.json()["id"]
-
-    return headers, plant_id
+    return headers, create_plant(client, headers)
 
 
 def _create_item(client, headers, sku="RM-001"):
